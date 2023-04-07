@@ -37,7 +37,8 @@ def run_server(handlers: typing.Dict):
         )
         return response
 
-    host = "127.0.0.1"
+    #host = "127.0.0.1"
+    host = "0.0.0.0"
     port = handlers["port"]
 
     logging.getLogger("werkzeug").setLevel(logging.ERROR)
