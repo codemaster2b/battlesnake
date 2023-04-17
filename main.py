@@ -17,6 +17,8 @@ import copy
 import time
 import threading
 import queue
+import cProfile, pstats, io
+from pstats import SortKey
 
 RandomSeed = None
 PossibleMoves = ["up", "down", "left", "right"]
@@ -88,17 +90,17 @@ def avoid_snakes(futureHead, snakes, currentSnake):
       return False
   return True
 
-
 def get_next(currentHead, nextMove):
-  futureHead = currentHead.copy()
-  if nextMove in ["left", "right"]:
+  futureHead = {}
+  if nextMove == "left" or nextMove == "right":
     futureHead["x"] = currentHead["x"] + MoveLookup[nextMove]
-  elif nextMove in ["up", "down"]:
+    futureHead["y"] = currentHead["y"]
+  elif nextMove == "up" or nextMove == "down":
+    futureHead["x"] = currentHead["x"]
     futureHead["y"] = currentHead["y"] + MoveLookup[nextMove]
   return futureHead
 
-
-def make_minimax_move(gameState: typing.Dict, timeLimit=0.2):
+def make_minimax_move(gameState: typing.Dict, timeLimit=0.35):
   # this code will iterate as long as there is time
   results = queue.LifoQueue()
   event = threading.Event()
@@ -123,6 +125,9 @@ def make_minimax_move(gameState: typing.Dict, timeLimit=0.2):
 
 
 def make_minimax_iterating(gameState, event, queue):
+  #pr = cProfile.Profile()
+  #pr.enable()
+
   depth = 2
   while not event.is_set():
     myBoard = copy.deepcopy(gameState["board"])
@@ -139,6 +144,12 @@ def make_minimax_iterating(gameState, event, queue):
         queue.put(move)
         depth += 2
 
+  #pr.disable()
+  #s = io.StringIO()
+  #sortby = SortKey.CUMULATIVE
+  #ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+  #ps.print_stats()
+  #print(s.getvalue())
   return
 
 def minimax(event, myBoard, depth, maximizingPlayer):
@@ -157,10 +168,12 @@ def minimax(event, myBoard, depth, maximizingPlayer):
     for snake in myBoard["snakes"]:
       if snake["id"] == myBoard["myId"]:
         estimate -= calcFoodScore(myBoard, snake)
+        estimate += calcHazardScore(myBoard, snake)
         estimate += calcLengthScore(snake)
         estimate += calcRunwayScore(myBoard, snake, maxRoomScore)
       else:
         estimate += calcFoodScore(myBoard, snake)
+        estimate -= calcHazardScore(myBoard, snake)
         estimate -= calcLengthScore(snake)
         estimate -= calcRunwayScore(myBoard, snake, maxRoomScore)
 
@@ -258,6 +271,10 @@ def minimax_new_board(myBoard, move, maximizingPlayer):
       if snake["health"] < 100:
         snake["body"].pop()
       snake["health"] = snake["health"] - 1
+      if "hazards" in newBoard.keys():
+        for hazard in newBoard["hazards"]:
+          if hazard["x"] == next["x"] and hazard["y"] == next["y"]:
+            snake["health"] = snake["health"] - 15
       if ateFood:
         snake["health"] = 100
       if snake["health"] < 1:
@@ -316,6 +333,16 @@ def calcFoodScore(myBoard, snake):
     for food in myBoard["food"]:
       foodScore = min(foodScore, abs(food["x"] - head["x"]) + abs(food["y"] - head["y"]))
     return foodScore
+
+def calcHazardScore(myBoard, snake):
+  if snake is None or "hazards" not in myBoard.keys():
+    return 0
+  else:
+    next = snake["body"][0]
+    for hazard in myBoard["hazards"]:
+      if hazard["x"] == next["x"] and hazard["y"] == next["y"]:
+        return -3
+    return 0
 
 def calcLengthScore(snake):
   if snake is None:
