@@ -442,8 +442,7 @@ def calcRunwayScore2(myBoard, snake, limit):
 
     index = 0
     while index < count and distances[count-1] < limit:
-      node = discovered[index].copy()      
-      print("node", node[0], node[1])
+      node = discovered[index].copy()
 
       node[0] -= 1
       if node[0] >= 0:
@@ -522,8 +521,6 @@ def calcRunwayScore2(myBoard, snake, limit):
       node[1] -= 1
 
       index += 1
-      
-    print("travelled",index)
         
     return distances[count-1] * (int(25/limit) + 1)    
 
