@@ -415,8 +415,67 @@ def calcRunwayScore(myBoard, snake, limit):
       index += 1
 
     return max(distances) * (int(25/limit) + 1)
-    
+
 def calcRunwayScore2(myBoard, snake, limit):
+  if snake is None:
+    return 0
+  else:
+    #create snake body array to avoid
+    snakeLen = 0
+    for s in myBoard["snakes"]:
+      snakeLen += len(s["body"])
+    
+    snakeBodies = [0 for i in range(snakeLen)]
+    snakeCount = 0
+    for s in myBoard["snakes"]:
+      for part in s["body"]:
+        snakeBodies[snakeCount] = part["y"]*100+part["x"]
+        snakeCount += 1
+  
+    #create discovery nodes
+    discovered = [0 for i in range(121)]
+    distances = [0 for i in range(121)]
+    discovered[0] = snake["body"][0]["y"]*100+snake["body"][0]["x"]
+    count = 1
+    
+    index = 0
+    while index < count and distances[count-1] < limit:
+      node = discovered[index]
+
+      node -= 100
+      if node >= 0 and not node in snakeBodies and not node in discovered[:count]:
+        discovered[count] = node
+        distances[count] = distances[index] + 1
+        count += 1
+      node += 100
+
+      node += 100
+      if node//100 < myBoard["height"] and not node in snakeBodies and not node in discovered[:count]:
+        discovered[count] = node
+        distances[count] = distances[index] + 1
+        count += 1
+      node -= 100
+
+      node -= 1
+      if node%100 >= 0 and node%100 < 99 and not node in snakeBodies and not node in discovered[:count]:
+        discovered[count] = node
+        distances[count] = distances[index] + 1
+        count += 1
+      node += 1
+
+      node += 1
+      if node%100 < myBoard["width"] and not node in snakeBodies and not node in discovered[:count]:
+        discovered[count] = node
+        distances[count] = distances[index] + 1
+        count += 1
+      node -= 1
+
+      index += 1
+
+    return distances[count-1] * (int(25/limit) + 1)
+
+    
+def calcRunwayScore3(myBoard, snake, limit):
   if snake is None:
     return 0
   else:
