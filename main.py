@@ -171,20 +171,12 @@ def minimax(event, myBoard, depth, maximizingPlayer):
         estimate -= calcFoodScore(myBoard, snake)
         estimate += calcHazardScore(myBoard, snake)
         estimate += calcLengthScore(snake)
-        rs1 = calcRunwayScore(myBoard, snake, maxRoomScore)
-        rs2 = calcRunwayScore2(myBoard, snake, maxRoomScore)
-        if rs1 != rs2:
-          print("mismatched runway scores", rs1, rs2)
-        estimate += rs1
+        estimate += calcRunwayScore(myBoard, snake, maxRoomScore)
       else:
         estimate += calcFoodScore(myBoard, snake)
         estimate -= calcHazardScore(myBoard, snake)
         estimate -= calcLengthScore(snake)
-        rs1 = calcRunwayScore(myBoard, snake, maxRoomScore)
-        rs2 = calcRunwayScore2(myBoard, snake, maxRoomScore)
-        if rs1 != rs2:
-          print("mismatched runway scores", rs1, rs2)
-        estimate -= rs1
+        estimate -= calcRunwayScore(myBoard, snake, maxRoomScore)
 
     return (estimate, "---")
   if maximizingPlayer:
@@ -363,63 +355,6 @@ def calcRunwayScore(myBoard, snake, limit):
   if snake is None:
     return 0
   else:
-    discovered = [snake["body"][0]]
-    distances = [0]
-    index = 0
-    while index < len(discovered) and distances[-1] < limit:
-      origin = discovered[index]
-
-      originUp = get_next(origin, "up")
-      if originUp not in discovered and avoid_walls(
-          originUp, myBoard["width"], myBoard["height"]):
-        good = True
-        for s in myBoard["snakes"]:
-          if originUp in s["body"]:
-            good = False
-        if good:
-          discovered.append(originUp)
-          distances.append(distances[index] + 1)
-
-      originDown = get_next(origin, "down")
-      if originDown not in discovered and avoid_walls(
-          originDown, myBoard["width"], myBoard["height"]):
-        good = True
-        for s in myBoard["snakes"]:
-          if originDown in s["body"]:
-            good = False
-        if good:
-          discovered.append(originDown)
-          distances.append(distances[index] + 1)
-
-      originLeft = get_next(origin, "left")
-      if originLeft not in discovered and avoid_walls(
-          originLeft, myBoard["width"], myBoard["height"]):
-        good = True
-        for s in myBoard["snakes"]:
-          if originLeft in s["body"]:
-            good = False
-        if good:
-          discovered.append(originLeft)
-          distances.append(distances[index] + 1)
-
-      originRight = get_next(origin, "right")
-      if originRight not in discovered and avoid_walls(
-          originRight, myBoard["width"], myBoard["height"]):
-        good = True
-        for s in myBoard["snakes"]:
-          if originRight in s["body"]:
-            good = False
-        if good:
-          discovered.append(originRight)
-          distances.append(distances[index] + 1)
-      index += 1
-
-    return max(distances) * (int(25/limit) + 1)
-
-def calcRunwayScore2(myBoard, snake, limit):
-  if snake is None:
-    return 0
-  else:
     #create snake body array to avoid
     snakeLen = 0
     for s in myBoard["snakes"]:
@@ -473,69 +408,6 @@ def calcRunwayScore2(myBoard, snake, limit):
       index += 1
 
     return distances[count-1] * (int(25/limit) + 1)
-
-    
-def calcRunwayScore3(myBoard, snake, limit):
-  if snake is None:
-    return 0
-  else:
-    #create snake body array to avoid
-    snakeLen = 0
-    for s in myBoard["snakes"]:
-      snakeLen += len(s["body"])
-    
-    snakeBodies = np.zeros((snakeLen),dtype=int)
-    snakeCount = 0
-    for s in myBoard["snakes"]:
-      for part in s["body"]:
-        snakeBodies[snakeCount] = part["y"]*100+part["x"]
-        snakeCount += 1
-  
-    #create discovery nodes
-    discovered = np.zeros((121),dtype=int)
-    distances = np.zeros((121),dtype=int)
-    discovered[0] = snake["body"][0]["y"]*100+snake["body"][0]["x"]
-    count = 1
-
-    index = 0
-    while index < count and distances[count-1] < limit:
-      node = discovered[index]
-      
-      targets = [node-100, node+100, node-1, node+1]
-      ins = np.isin(targets, discovered[:count])
-      snk = np.isin(targets, snakeBodies)
-
-      node -= 100
-      if node >= 0 and not ins[0] and not snk[0]:
-        discovered[count] = node
-        distances[count] = distances[index] + 1
-        count += 1
-      node += 100
-
-      node += 100
-      if node//100 < myBoard["height"] and not ins[1] and not snk[1]:
-        discovered[count] = node
-        distances[count] = distances[index] + 1
-        count += 1
-      node -= 100
-
-      node -= 1
-      if node%100 >= 0 and node%100 < 99 and not ins[2] and not snk[2]:
-        discovered[count] = node
-        distances[count] = distances[index] + 1
-        count += 1
-      node += 1
-
-      node += 1
-      if node%100 < myBoard["width"] and not ins[3] and not snk[3]:
-        discovered[count] = node
-        distances[count] = distances[index] + 1
-        count += 1
-      node -= 1
-
-      index += 1
-        
-    return distances[count-1] * (int(25/limit) + 1)    
 
 def copyBoard(myBoard):
   newBoard = {}
