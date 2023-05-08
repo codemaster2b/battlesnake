@@ -443,7 +443,7 @@ def calcRunwayScore2(myBoard, snake, limit):
       node = discovered[index]
 
       node -= 100
-      if node >= 0 and not np.isin(discovered[:count],node).any() and not np.isin(snakeBodies, node).any():
+      if node >= 0 and not np.isin(node, discovered[:count]).any() and not np.isin(node, snakeBodies).any():
         discovered[count] = node
         distances[count] = distances[index] + 1
         count += 1
