@@ -446,64 +446,79 @@ def calcRunwayScore2(myBoard, snake, limit):
       print("node", node[0], node[1])
 
       node[0] -= 1
-      print("new node", node[0], node[1])
-      print(snakeBodies, [node])
-      print(np.isin(snakeBodies, [node]))
-      if np.isin(snakeBodies, [node]):
-        print("in snakes")      
-      if np.any(discovered[:count], where=[node]):
-        print("in discovered")      
-      
-      if node[0] >= 0 and not np.any(discovered[:count], where=[node]) and not np.any(snakeBodies, where=[node]):
-        discovered[count][0] = node[0]
-        discovered[count][1] = node[1]
-        distances[count] = distances[index] + 1
-        count += 1
+      if node[0] >= 0:
+        found = False
+        for i in range(count):
+          if discovered[i][0] == node[0] and discovered[i][1] == node[1]:
+            found = True
+            break
+        if not found:
+          for i in range(snakeCount):
+            if snakeBodies[i][0] == node[0] and snakeBodies[i][1] == node[1]:
+              found = True
+              break
+        if not found:        
+          discovered[count][0] = node[0]
+          discovered[count][1] = node[1]
+          distances[count] = distances[index] + 1
+          count += 1
       node[0] += 1
 
       node[0] += 1
-      print("new node", node[0], node[1])
-      print(np.isin(snakeBodies, [node]))      
-      if np.isin(snakeBodies, [node]):
-        print("in snakes")      
-      if np.any(discovered[:count], where=[node]):
-        print("in discovered")  
-        
-      if node[0] < myBoard["height"] and not np.any(discovered[:count], where=[node]) and not np.any(snakeBodies, where=[node]):
-        discovered[count][0] = node[0]
-        discovered[count][1] = node[1]
-        distances[count] = distances[index] + 1
-        count += 1
+      if node[0] < myBoard["height"]:
+        found = False
+        for i in range(count):
+          if discovered[i][0] == node[0] and discovered[i][1] == node[1]:
+            found = True
+            break
+        if not found:
+          for i in range(snakeCount):
+            if snakeBodies[i][0] == node[0] and snakeBodies[i][1] == node[1]:
+              found = True
+              break
+        if not found:        
+          discovered[count][0] = node[0]
+          discovered[count][1] = node[1]
+          distances[count] = distances[index] + 1
+          count += 1
       node[0] -= 1
 
       node[1] -= 1
-      print("new node", node[0], node[1])
-      print(np.isin(snakeBodies, [node]))      
-      if np.isin(snakeBodies, [node]):
-        print("in snakes")      
-      if np.any(discovered[:count], where=[node]):
-        print("in discovered")  
-        
-      if node[1] >= 0 and not np.any(discovered[:count], where=[node]) and not np.any(snakeBodies, where=[node]):
-        discovered[count][0] = node[0]
-        discovered[count][1] = node[1]
-        distances[count] = distances[index] + 1
-        count += 1
+      if node[1] >= 0:
+        found = False
+        for i in range(count):
+          if discovered[i][0] == node[0] and discovered[i][1] == node[1]:
+            found = True
+            break
+        if not found:
+          for i in range(snakeCount):
+            if snakeBodies[i][0] == node[0] and snakeBodies[i][1] == node[1]:
+              found = True
+              break
+        if not found:        
+          discovered[count][0] = node[0]
+          discovered[count][1] = node[1]
+          distances[count] = distances[index] + 1
+          count += 1
       node[1] += 1
 
       node[1] += 1
-      print("new node", node[0], node[1])
-      print(np.isin(snakeBodies, [node]))      
-      if np.isin(snakeBodies, [node]):
-        print("in snakes")      
-      if np.any(discovered[:count], where=[node]):
-        print("in discovered")  
-        
-      if node[1] < myBoard["width"] and not np.any(discovered[:count], where=[node]) and not np.any(snakeBodies, where=[node]):
-        discovered[count][0] = node[0]
-        discovered[count][1] = node[1]
-        distances[count] = distances[index] + 1
-        count += 1
+      if node[1] < myBoard["width"]:
+        found = False
+        for i in range(count):
+          if discovered[i][0] == node[0] and discovered[i][1] == node[1]:
+            found = True
+            break
+        if not found:
+          for i in range(snakeCount):
+            if snakeBodies[i][0] == node[0] and snakeBodies[i][1] == node[1]:
+              found = True
+              break
+        if not found:        
+          discovered[count][0] = node[0]
+          discovered[count][1] = node[1]
+          distances[count] = distances[index] + 1
+          count += 1
       node[1] -= 1
 
       index += 1
