@@ -125,8 +125,8 @@ def make_minimax_move(gameState: typing.Dict, timeLimit=0.35):
 
 
 def make_minimax_iterating(gameState, event, queue):
-  #pr = cProfile.Profile()
-  #pr.enable()
+  pr = cProfile.Profile()
+  pr.enable()
 
   depth = 2
   while not event.is_set():
@@ -144,12 +144,12 @@ def make_minimax_iterating(gameState, event, queue):
         queue.put(move)
         depth += 2
 
-  #pr.disable()
-  #s = io.StringIO()
-  #sortby = SortKey.CUMULATIVE
-  #ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-  #ps.print_stats()
-  #print(s.getvalue())
+  pr.disable()
+  s = io.StringIO()
+  sortby = SortKey.CUMULATIVE
+  ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+  ps.print_stats()
+  print(s.getvalue())
   return
 
 def minimax(event, myBoard, depth, maximizingPlayer):
