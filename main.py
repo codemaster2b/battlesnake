@@ -444,7 +444,16 @@ def calcRunwayScore2(myBoard, snake, limit):
     while index < count and distances[count-1] < limit:
       node = discovered[index].copy()
       
+      print("node", node[0], node[1])
       node[0] -= 1
+      
+      if np.any(snakeBodies, where=[node]):
+        print("in snakes")
+      
+      if np.any(discovered[:count], where=[node]):
+        print("in discovered")
+      
+      
       if node[0] >= 0 and not np.any(discovered[:count], where=[node]) and not np.any(snakeBodies, where=[node]):
         discovered[count][0] = node[0]
         discovered[count][1] = node[1]
