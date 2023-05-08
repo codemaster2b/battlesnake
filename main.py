@@ -447,7 +447,8 @@ def calcRunwayScore2(myBoard, snake, limit):
 
       node[0] -= 1
       print("new node", node[0], node[1])
-      if np.any(snakeBodies, where=[node]):
+      print(np.isin(snakeBodies, [node]))      
+      if np.isin(snakeBodies, [node]):
         print("in snakes")      
       if np.any(discovered[:count], where=[node]):
         print("in discovered")      
@@ -461,7 +462,8 @@ def calcRunwayScore2(myBoard, snake, limit):
 
       node[0] += 1
       print("new node", node[0], node[1])
-      if np.any(snakeBodies, where=[node]):
+      print(np.isin(snakeBodies, [node]))      
+      if np.isin(snakeBodies, [node]):
         print("in snakes")      
       if np.any(discovered[:count], where=[node]):
         print("in discovered")  
@@ -475,7 +477,8 @@ def calcRunwayScore2(myBoard, snake, limit):
 
       node[1] -= 1
       print("new node", node[0], node[1])
-      if np.any(snakeBodies, where=[node]):
+      print(np.isin(snakeBodies, [node]))      
+      if np.isin(snakeBodies, [node]):
         print("in snakes")      
       if np.any(discovered[:count], where=[node]):
         print("in discovered")  
@@ -489,7 +492,8 @@ def calcRunwayScore2(myBoard, snake, limit):
 
       node[1] += 1
       print("new node", node[0], node[1])
-      if np.any(snakeBodies, where=[node]):
+      print(np.isin(snakeBodies, [node]))      
+      if np.isin(snakeBodies, [node]):
         print("in snakes")      
       if np.any(discovered[:count], where=[node]):
         print("in discovered")  
