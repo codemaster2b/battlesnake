@@ -171,14 +171,20 @@ def minimax(event, myBoard, depth, maximizingPlayer):
         estimate -= calcFoodScore(myBoard, snake)
         estimate += calcHazardScore(myBoard, snake)
         estimate += calcLengthScore(snake)
-        estimate += calcRunwayScore(myBoard, snake, maxRoomScore)/2
-        estimate += calcRunwayScore2(myBoard, snake, maxRoomScore)/2
+        rs1 = calcRunwayScore(myBoard, snake, maxRoomScore)
+        rs2 = calcRunwayScore2(myBoard, snake, maxRoomScore)
+        if rs1 != rs2:
+          print("mismatched runway scores", rs1, rs2)
+        estimate += rs1
       else:
         estimate += calcFoodScore(myBoard, snake)
         estimate -= calcHazardScore(myBoard, snake)
         estimate -= calcLengthScore(snake)
-        estimate -= calcRunwayScore(myBoard, snake, maxRoomScore)/2
-        estimate -= calcRunwayScore2(myBoard, snake, maxRoomScore)/2
+        rs1 = calcRunwayScore(myBoard, snake, maxRoomScore)
+        rs2 = calcRunwayScore2(myBoard, snake, maxRoomScore)
+        if rs1 != rs2:
+          print("mismatched runway scores", rs1, rs2)
+        estimate -= rs1
 
     return (estimate, "---")
   if maximizingPlayer:
