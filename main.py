@@ -444,7 +444,7 @@ def calcRunwayScore2(myBoard, snake, limit):
     while index < count and distances[count-1] < limit:
       node = discovered[index].copy()
       
-      node[0] -= 1      
+      node[0] -= 1
       if node[0] >= 0 and not np.any(discovered[:count], where=[node]) and not np.any(snakeBodies, where=[node]):
         discovered[count][0] = node[0]
         discovered[count][1] = node[1]
@@ -452,7 +452,7 @@ def calcRunwayScore2(myBoard, snake, limit):
         count += 1
       node[0] += 1
 
-      node[0] += 1      
+      node[0] += 1
       if node[0] < myBoard["height"] and not np.any(discovered[:count], where=[node]) and not np.any(snakeBodies, where=[node]):
         discovered[count][0] = node[0]
         discovered[count][1] = node[1]
@@ -460,7 +460,7 @@ def calcRunwayScore2(myBoard, snake, limit):
         count += 1
       node[0] -= 1
 
-      node[1] -= 1      
+      node[1] -= 1
       if node[1] >= 0 and not np.any(discovered[:count], where=[node]) and not np.any(snakeBodies, where=[node]):
         discovered[count][0] = node[0]
         discovered[count][1] = node[1]
@@ -468,7 +468,7 @@ def calcRunwayScore2(myBoard, snake, limit):
         count += 1
       node[1] += 1
 
-      node[1] += 1      
+      node[1] += 1
       if node[1] < myBoard["width"] and not np.any(discovered[:count], where=[node]) and not np.any(snakeBodies, where=[node]):
         discovered[count][0] = node[0]
         discovered[count][1] = node[1]
@@ -477,8 +477,10 @@ def calcRunwayScore2(myBoard, snake, limit):
       node[1] -= 1
 
       index += 1
-
-    return max(distances) * (int(25/limit) + 1)    
+      
+    print("travelled",index)
+        
+    return distances[count-1] * (int(25/limit) + 1)    
 
 def copyBoard(myBoard):
   newBoard = {}
