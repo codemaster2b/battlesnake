@@ -443,28 +443,28 @@ def calcRunwayScore2(myBoard, snake, limit):
       node = discovered[index]
 
       node -= 100
-      if node >= 0 and not np.any(discovered == node) and not np.any(snakeBodies == node):
+      if node >= 0 and not np.isin(discovered[:count] == node).any() and not np.isin(snakeBodies == node).any():
         discovered[count] = node
         distances[count] = distances[index] + 1
         count += 1
       node += 100
 
       node += 100
-      if node//100 < myBoard["height"] and not np.any(discovered == node) and not np.any(snakeBodies == node):
+      if node//100 < myBoard["height"] and not np.any(discovered[:count] == node) and not np.any(snakeBodies == node):
         discovered[count] = node
         distances[count] = distances[index] + 1
         count += 1
       node -= 100
 
       node -= 1
-      if node%100 >= 0 and node%100 < 99 and not np.any(discovered == node) and not np.any(snakeBodies == node):
+      if node%100 >= 0 and node%100 < 99 and not np.any(discovered[:count] == node) and not np.any(snakeBodies == node):
         discovered[count] = node
         distances[count] = distances[index] + 1
         count += 1
       node += 1
 
       node += 1
-      if node%100 < myBoard["width"] and not np.any(discovered == node) and not np.any(snakeBodies == node):
+      if node%100 < myBoard["width"] and not np.any(discovered[:count] == node) and not np.any(snakeBodies == node):
         discovered[count] = node
         distances[count] = distances[index] + 1
         count += 1
