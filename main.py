@@ -447,7 +447,8 @@ def calcRunwayScore2(myBoard, snake, limit):
 
       node[0] -= 1
       print("new node", node[0], node[1])
-      print(np.isin(snakeBodies, [node]))      
+      print(snakeBodies, [node])
+      print(np.isin(snakeBodies, [node]))
       if np.isin(snakeBodies, [node]):
         print("in snakes")      
       if np.any(discovered[:count], where=[node]):
