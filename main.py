@@ -450,57 +450,24 @@ def calcRunwayScore2(myBoard, snake, limit):
       node += 100
 
       node += 100
-      if node//100 < myBoard["height"]:
-        found = False
-        for i in range(count):
-          if discovered[i] == node:
-            found = True
-            break
-        if not found:
-          for i in range(snakeCount):
-            if snakeBodies[i] == node:
-              found = True
-              break
-        if not found:
-          discovered[count] = node
-          distances[count] = distances[index] + 1
-          count += 1
+      if node//100 < myBoard["height"] and not np.any(discovered == node) and not np.any(snakeBodies == node):
+        discovered[count] = node
+        distances[count] = distances[index] + 1
+        count += 1
       node -= 100
 
       node -= 1
-      if node%100 >= 0 and node%100 < 99:
-        found = False
-        for i in range(count):
-          if discovered[i] == node:
-            found = True
-            break
-        if not found:
-          for i in range(snakeCount):
-            if snakeBodies[i] == node:
-              found = True
-              break
-        if not found:
-          discovered[count] = node
-          distances[count] = distances[index] + 1
-          count += 1
+      if node%100 >= 0 and node%100 < 99 and not np.any(discovered == node) and not np.any(snakeBodies == node):
+        discovered[count] = node
+        distances[count] = distances[index] + 1
+        count += 1
       node += 1
 
       node += 1
-      if node%100 < myBoard["width"]:
-        found = False
-        for i in range(count):
-          if discovered[i] == node:
-            found = True
-            break
-        if not found:
-          for i in range(snakeCount):
-            if snakeBodies[i] == node:
-              found = True
-              break
-        if not found:
-          discovered[count] = node
-          distances[count] = distances[index] + 1
-          count += 1
+      if node%100 < myBoard["width"] and not np.any(discovered == node) and not np.any(snakeBodies == node):
+        discovered[count] = node
+        distances[count] = distances[index] + 1
+        count += 1
       node -= 1
 
       index += 1
