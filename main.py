@@ -425,100 +425,94 @@ def calcRunwayScore2(myBoard, snake, limit):
     for s in myBoard["snakes"]:
       snakeLen += len(s["body"])
     
-    snakeBodies = np.zeros((snakeLen,2),dtype=int)
+    snakeBodies = np.zeros((snakeLen),dtype=int)
     snakeCount = 0
     for s in myBoard["snakes"]:
       for part in s["body"]:
-        snakeBodies[snakeCount][0] = part["y"]
-        snakeBodies[snakeCount][1] = part["x"]
+        snakeBodies[snakeCount] = part["y"]*100+part["x"]
         snakeCount += 1
   
     #create discovery nodes
-    discovered = np.zeros((121,2),dtype=int)
-    discovered[0][0] = snake["body"][0]["y"]
-    discovered[0][1] = snake["body"][0]["x"]
+    discovered = np.zeros((121),dtype=int)
     distances = np.zeros((121),dtype=int)
+    discovered[0] = snake["body"][0]["y"]*100+snake["body"][0]["x"]
     count = 1
 
     index = 0
     while index < count and distances[count-1] < limit:
-      node = discovered[index].copy()
+      node = discovered[index]
 
-      node[0] -= 1
-      if node[0] >= 0:
+      node -= 100
+      if node >= 0:
         found = False
         for i in range(count):
-          if discovered[i][0] == node[0] and discovered[i][1] == node[1]:
+          if discovered[i] == node:
             found = True
             break
         if not found:
           for i in range(snakeCount):
-            if snakeBodies[i][0] == node[0] and snakeBodies[i][1] == node[1]:
+            if snakeBodies[i] == node:
               found = True
               break
-        if not found:        
-          discovered[count][0] = node[0]
-          discovered[count][1] = node[1]
+        if not found:
+          discovered[count] = node
           distances[count] = distances[index] + 1
           count += 1
-      node[0] += 1
+      node += 100
 
-      node[0] += 1
-      if node[0] < myBoard["height"]:
+      node += 100
+      if node//100 < myBoard["height"]:
         found = False
         for i in range(count):
-          if discovered[i][0] == node[0] and discovered[i][1] == node[1]:
+          if discovered[i] == node:
             found = True
             break
         if not found:
           for i in range(snakeCount):
-            if snakeBodies[i][0] == node[0] and snakeBodies[i][1] == node[1]:
+            if snakeBodies[i] == node:
               found = True
               break
-        if not found:        
-          discovered[count][0] = node[0]
-          discovered[count][1] = node[1]
+        if not found:
+          discovered[count] = node
           distances[count] = distances[index] + 1
           count += 1
-      node[0] -= 1
+      node -= 100
 
-      node[1] -= 1
-      if node[1] >= 0:
+      node -= 1
+      if node%100 >= 0 and node%100 < 99:
         found = False
         for i in range(count):
-          if discovered[i][0] == node[0] and discovered[i][1] == node[1]:
+          if discovered[i] == node:
             found = True
             break
         if not found:
           for i in range(snakeCount):
-            if snakeBodies[i][0] == node[0] and snakeBodies[i][1] == node[1]:
+            if snakeBodies[i] == node:
               found = True
               break
-        if not found:        
-          discovered[count][0] = node[0]
-          discovered[count][1] = node[1]
+        if not found:
+          discovered[count] = node
           distances[count] = distances[index] + 1
           count += 1
-      node[1] += 1
+      node += 1
 
-      node[1] += 1
-      if node[1] < myBoard["width"]:
+      node += 1
+      if node%100 < myBoard["width"]:
         found = False
         for i in range(count):
-          if discovered[i][0] == node[0] and discovered[i][1] == node[1]:
+          if discovered[i] == node:
             found = True
             break
         if not found:
           for i in range(snakeCount):
-            if snakeBodies[i][0] == node[0] and snakeBodies[i][1] == node[1]:
+            if snakeBodies[i] == node:
               found = True
               break
-        if not found:        
-          discovered[count][0] = node[0]
-          discovered[count][1] = node[1]
+        if not found:
+          discovered[count] = node
           distances[count] = distances[index] + 1
           count += 1
-      node[1] -= 1
+      node -= 1
 
       index += 1
         
