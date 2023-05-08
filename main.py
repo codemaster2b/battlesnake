@@ -17,6 +17,7 @@ import copy
 import time
 import threading
 import queue
+import numpy as np
 import cProfile, pstats, io
 from pstats import SortKey
 
@@ -170,12 +171,14 @@ def minimax(event, myBoard, depth, maximizingPlayer):
         estimate -= calcFoodScore(myBoard, snake)
         estimate += calcHazardScore(myBoard, snake)
         estimate += calcLengthScore(snake)
-        estimate += calcRunwayScore(myBoard, snake, maxRoomScore)
+        estimate += calcRunwayScore(myBoard, snake, maxRoomScore)/2
+        estimate += calcRunwayScore2(myBoard, snake, maxRoomScore)/2
       else:
         estimate += calcFoodScore(myBoard, snake)
         estimate -= calcHazardScore(myBoard, snake)
         estimate -= calcLengthScore(snake)
-        estimate -= calcRunwayScore(myBoard, snake, maxRoomScore)
+        estimate -= calcRunwayScore(myBoard, snake, maxRoomScore)/2
+        estimate -= calcRunwayScore2(myBoard, snake, maxRoomScore)/2
 
     return (estimate, "---")
   if maximizingPlayer:
@@ -406,6 +409,70 @@ def calcRunwayScore(myBoard, snake, limit):
       index += 1
 
     return max(distances) * (int(25/limit) + 1)
+    
+def calcRunwayScore2(myBoard, snake, limit):
+  if snake is None:
+    return 0
+  else:
+    #create snake body array to avoid
+    snakeLen = 0
+    for s in myBoard["snakes"]:
+      snakeLen += len(s["body"])
+    
+    snakeBodies = np.zeros((snakeLen,2),dtype=int)
+    snakeCount = 0
+    for s in myBoard["snakes"]:
+      for part in s["body"]:
+        snakeBodies[snakeCount][0] = part["y"]
+        snakeBodies[snakeCount][1] = part["x"]
+        snakeCount += 1
+  
+    #create discovery nodes
+    discovered = np.zeros((121,2),dtype=int)
+    discovered[0][0] = snake["body"][0]["y"]
+    discovered[0][1] = snake["body"][0]["x"]
+    distances = np.zeros((121),dtype=int)
+    count = 1
+
+    index = 0
+    while index < count and distances[count-1] < limit:
+      node = discovered[index].copy()
+      
+      node[0] -= 1      
+      if node[0] >= 0 and not np.any(discovered[:count], where=[node]) and not np.any(snakeBodies, where=[node]):
+        discovered[count][0] = node[0]
+        discovered[count][1] = node[1]
+        distances[count] = distances[index] + 1
+        count += 1
+      node[0] += 1
+
+      node[0] += 1      
+      if node[0] < myBoard["height"] and not np.any(discovered[:count], where=[node]) and not np.any(snakeBodies, where=[node]):
+        discovered[count][0] = node[0]
+        discovered[count][1] = node[1]
+        distances[count] = distances[index] + 1
+        count += 1
+      node[0] -= 1
+
+      node[1] -= 1      
+      if node[1] >= 0 and not np.any(discovered[:count], where=[node]) and not np.any(snakeBodies, where=[node]):
+        discovered[count][0] = node[0]
+        discovered[count][1] = node[1]
+        distances[count] = distances[index] + 1
+        count += 1
+      node[1] += 1
+
+      node[1] += 1      
+      if node[1] < myBoard["width"] and not np.any(discovered[:count], where=[node]) and not np.any(snakeBodies, where=[node]):
+        discovered[count][0] = node[0]
+        discovered[count][1] = node[1]
+        distances[count] = distances[index] + 1
+        count += 1
+      node[1] -= 1
+
+      index += 1
+
+    return max(distances) * (int(25/limit) + 1)    
 
 def copyBoard(myBoard):
   newBoard = {}
