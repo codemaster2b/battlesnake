@@ -33,7 +33,6 @@ SCORE_MIN = -G_END_SCORE - G_END_SPAN
 SCORE_GAME_END = G_END_SCORE
 SCORE_NEG_GAME_END = -G_END_SCORE
 
-
 # info is called when you create your Battlesnake on play.battlesnake.com
 # and controls your Battlesnake's appearance
 # TIP: If you open your Battlesnake URL in a browser you should see this data
@@ -46,7 +45,6 @@ def info() -> typing.Dict:
     "head": "pixel",
     "tail": "pixel",
   }
-
 
 # start is called when your Battlesnake begins a game
 def start(gameState: typing.Dict):
@@ -107,8 +105,15 @@ def make_minimax_move(gameState: typing.Dict, timeLimit=0.35):
   event = threading.Event()
   thread = threading.Thread(target=make_minimax_iterating, args=(gameState, event, results))
   thread.start()
-  time.sleep(timeLimit)
-  event.set()  #terminate the thread
+  
+  sleepDivisions = 5
+  sleepCount = 0
+  while sleepCount < sleepDivisions and results.qsize() < 100:
+    time.sleep(timeLimit / sleepDivisions)
+    sleepCount += 1
+  
+  #time.sleep(timeLimit)
+  event.set() #terminate the thread
 
   if results.qsize() > 0:
     return results.get_nowait()
@@ -130,14 +135,14 @@ def make_minimax_iterating(gameState, event, queue):
   pr.enable()
 
   depth = 2
-  while not event.is_set():
+  while not event.is_set() and depth < 100:
     myBoard = copy.deepcopy(gameState["board"])
     myBoard["myId"] = gameState["you"]["id"]
     myBoard["end"] = False
     myBoard["winner"] = 0  #no winner by default
-    value, move = minimax(event, myBoard, depth, True)
+    value, move = minimax(event, myBoard, depth, True, SCORE_MIN, SCORE_MAX)
 
-    if not event.is_set():      
+    if not event.is_set():
       if value <= SCORE_NEG_GAME_END: #detect a hopeless situation and exit early 
         event.set()
       else:
@@ -153,7 +158,7 @@ def make_minimax_iterating(gameState, event, queue):
   print(s.getvalue())
   return
 
-def minimax(event, myBoard, depth, maximizingPlayer):
+def minimax(event, myBoard, depth, maximizingPlayer, alpha, beta):
   if event.is_set():
     return (0, "---")
   bestMoves = PossibleMoves
@@ -187,25 +192,31 @@ def minimax(event, myBoard, depth, maximizingPlayer):
         return (0, "---")
       #print("my",depth,move)
       newBoard = minimax_new_board(myBoard, move, maximizingPlayer)
-      value, m = minimax(event, newBoard, depth - 1, False)
+      value, m = minimax(event, newBoard, depth - 1, not maximizingPlayer, alpha, beta)
       if value == bestValue:
         bestMoves = bestMoves + [move]
       elif value > bestValue:
         bestValue = value
         bestMoves = [move]
+      alpha = max(alpha, bestValue)
+      if beta < alpha: #modified from <=
+        break
     #print("my",depth,bestValue,bestMoves)
     return (bestValue, random.choice(bestMoves))
   else:  # minimizing player
+    bestValue = SCORE_MAX
     bestMoves = []
-    qs, ps = [], []
-    x, S = 0, 0
+    #qs, ps = [], []
+    #x, S = 0, 0
     for move in PossibleMoves:
       if event.is_set():
         return (0, "---")
       #print("other",depth,move)
       newBoard = minimax_new_board(myBoard, move, maximizingPlayer)
-      value, m = minimax(event, newBoard, depth - 1, True)
+      value, m = minimax(event, newBoard, depth - 1, not maximizingPlayer, alpha, beta)
       
+      """
+      # Matt's Probabilistic Minimax
       # if moves leads to an instant win, just take it
       if (value <= SCORE_NEG_GAME_END):
         return (value, [move])
@@ -217,7 +228,18 @@ def minimax(event, myBoard, depth, maximizingPlayer):
       bestMoves = bestMoves + [move]
       qs.append(value)
       x += (1.01**-value)
+      """
+      if value == bestValue:
+        bestMoves = bestMoves + [move]
+      elif value < bestValue:
+        bestValue = value
+        bestMoves = [move]
+      beta = min(beta, bestValue)
+      if beta < alpha: #modified from <=
+        break
 
+    """
+    # Matt's Probabilistic Minimax
     # if no moves are added, all lead to instant loss, so give up
     if (len(qs) == 0):
       return (SCORE_GAME_END, random.choice(PossibleMoves))
@@ -236,6 +258,9 @@ def minimax(event, myBoard, depth, maximizingPlayer):
       return (S, random.choices(bestMoves, weights=[ps[0], ps[1], ps[2]])[0])
     else:
       return (S, random.choice(PossibleMoves))
+    """
+    #print("other",depth,bestValue,bestMoves)
+    return (bestValue, random.choice(bestMoves))
 
 # Make a board move
 def minimax_new_board(myBoard, move, maximizingPlayer):
@@ -323,7 +348,6 @@ def minimax_new_board(myBoard, move, maximizingPlayer):
     newBoard["winner"] = SCORE_GAME_END  #maximizing player wins  
 
   return newBoard
-
 
 def calcFoodScore(myBoard, snake):
   if snake is None:
