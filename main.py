@@ -25,6 +25,8 @@ RandomSeed = None
 PossibleMoves = ["up", "down", "left", "right"]
 BestMove = "up"
 MoveLookup = {"left": -1, "right": 1, "up": 1, "down": -1}
+UseProbMiniMax = True
+UseProfiling = False
 
 G_END_SPAN = 100
 G_END_SCORE = 100000000
@@ -64,7 +66,6 @@ def move(gameState: typing.Dict) -> typing.Dict:
   print(f"MOVE {gameState['turn']}: {nextMove}")
   return {"move": nextMove}
 
-
 def avoid_walls(futureHead, boardWidth, boardHeight):
   x = int(futureHead["x"])
   y = int(futureHead["y"])
@@ -72,7 +73,6 @@ def avoid_walls(futureHead, boardWidth, boardHeight):
     return False
   else:
     return True
-
 
 def avoid_snakes(futureHead, snakes, currentSnake):
   for snake in snakes:
@@ -129,10 +129,10 @@ def make_minimax_move(gameState: typing.Dict, timeLimit=0.35):
     else:
       return random.choice(PossibleMoves)
 
-
 def make_minimax_iterating(gameState, event, queue):
-  pr = cProfile.Profile()
-  pr.enable()
+  if UseProfiling:
+    pr = cProfile.Profile()
+    pr.enable()
 
   depth = 2
   while not event.is_set() and depth < 100:
@@ -150,12 +150,13 @@ def make_minimax_iterating(gameState, event, queue):
         queue.put(move)
         depth += 2
 
-  pr.disable()
-  s = io.StringIO()
-  sortby = SortKey.CUMULATIVE
-  ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-  ps.print_stats()
-  print(s.getvalue())
+  if UseProfiling:
+    pr.disable()
+    s = io.StringIO()
+    sortby = SortKey.CUMULATIVE
+    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    ps.print_stats()
+    print(s.getvalue())
   return
 
 def minimax(event, myBoard, depth, maximizingPlayer, alpha, beta):
@@ -198,67 +199,64 @@ def minimax(event, myBoard, depth, maximizingPlayer, alpha, beta):
       elif value > bestValue:
         bestValue = value
         bestMoves = [move]
-      alpha = max(alpha, bestValue)
-      if beta < alpha: #modified from <=
-        break
+      if not UseProbMiniMax:
+        alpha = max(alpha, bestValue)
+        if beta < alpha: #modified from <=
+          break
     #print("my",depth,bestValue,bestMoves)
     return (bestValue, random.choice(bestMoves))
   else:  # minimizing player
     bestValue = SCORE_MAX
     bestMoves = []
-    #qs, ps = [], []
-    #x, S = 0, 0
+    qs, ps = [], []
+    x, S = 0, 0
     for move in PossibleMoves:
       if event.is_set():
         return (0, "---")
       #print("other",depth,move)
       newBoard = minimax_new_board(myBoard, move, maximizingPlayer)
       value, m = minimax(event, newBoard, depth - 1, not maximizingPlayer, alpha, beta)
-      
-      """
-      # Matt's Probabilistic Minimax
-      # if moves leads to an instant win, just take it
-      if (value <= SCORE_NEG_GAME_END):
-        return (value, [move])
+      if UseProbMiniMax:
+        # if moves leads to an instant win, just take it
+        if (value <= SCORE_NEG_GAME_END):
+          return (value, [move])
+        # if moves leads to instant loss, don't consider it
+        elif (value >= SCORE_GAME_END):
+          continue
         
-      # if moves leads to instant loss, don't consider it
-      elif (value >= SCORE_GAME_END):
-        continue
-        
-      bestMoves = bestMoves + [move]
-      qs.append(value)
-      x += (1.01**-value)
-      """
-      if value == bestValue:
         bestMoves = bestMoves + [move]
-      elif value < bestValue:
-        bestValue = value
-        bestMoves = [move]
-      beta = min(beta, bestValue)
-      if beta < alpha: #modified from <=
-        break
+        qs.append(value)
+        x += (1.01**-value)      
+      else:
+        if value == bestValue:
+          bestMoves = bestMoves + [move]
+        elif value < bestValue:
+          bestValue = value
+          bestMoves = [move]
+        beta = min(beta, bestValue)
+        if beta < alpha: #modified from <=
+          break
 
-    """
-    # Matt's Probabilistic Minimax
-    # if no moves are added, all lead to instant loss, so give up
-    if (len(qs) == 0):
-      return (SCORE_GAME_END, random.choice(PossibleMoves))
+    if UseProbMiniMax:
+      # if no moves are added, all lead to instant loss, so give up
+      if (len(qs) == 0):
+        return (SCORE_GAME_END, random.choice(PossibleMoves))
       
-    # if length is one, then there is only one option
-    elif (len(qs) == 1):
-      return (qs[0], bestMoves[0])
+      # if length is one, then there is only one option
+      elif (len(qs) == 1):
+        return (qs[0], bestMoves[0])
       
-    # probability is calculated with a bias for negative numbers
-    for i in range(len(qs)):
-      ps.append((1.01**-qs[i]) / x)
-      S += ps[i] * qs[i]
-    if (len(qs) == 2):
-      return (S, random.choices(bestMoves, weights=[ps[0], ps[1]])[0])
-    elif (len(qs) == 3):
-      return (S, random.choices(bestMoves, weights=[ps[0], ps[1], ps[2]])[0])
-    else:
-      return (S, random.choice(PossibleMoves))
-    """
+      # probability is calculated with a bias for negative numbers
+      for i in range(len(qs)):
+        ps.append((1.01**-qs[i]) / x)
+        S += ps[i] * qs[i]
+      if (len(qs) == 2):
+        return (S, random.choices(bestMoves, weights=[ps[0], ps[1]])[0])
+      elif (len(qs) == 3):
+        return (S, random.choices(bestMoves, weights=[ps[0], ps[1], ps[2]])[0])
+      else:
+        return (S, random.choice(PossibleMoves))
+    
     #print("other",depth,bestValue,bestMoves)
     return (bestValue, random.choice(bestMoves))
 
@@ -348,6 +346,7 @@ def minimax_new_board(myBoard, move, maximizingPlayer):
     newBoard["winner"] = SCORE_GAME_END  #maximizing player wins  
 
   return newBoard
+
 
 def calcFoodScore(myBoard, snake):
   if snake is None:
