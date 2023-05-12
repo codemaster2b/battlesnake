@@ -74,20 +74,58 @@ def avoid_walls(futureHead, boardWidth, boardHeight):
   else:
     return True
 
-def avoid_snakes(futureHead, snakes, currentSnake):
+def avoid_snakes(futureHead, alreadyMovedSnakes, notAlreadyMovedSnakes, currentSnake):
+  currentSnakeLen = len(currentSnake["body"])
+  for snake in alreadyMovedSnakes:
+    snakeLen = len(snake["body"])    
+    #avoid connecting with another snake head that is >= my length and has moved already    
+    if futureHead == snake["body"][0] and snakeLen >= currentSnakeLen:
+      return False
+    elif futureHead in snake["body"][1:-1]:
+      return False
+    elif snake["health"] == 100 and futureHead == snake["body"][-1]:
+      return False
+
+  for snake in notAlreadyMovedSnakes:
+    snakeLen = len(snake["body"])    
+    #avoid being within 1 of another snake that is >= my length and has not moved yet
+    dist = abs(snake["body"][0]["x"]-futureHead["x"]) + abs(snake["body"][0]["y"]-futureHead["y"])
+    if dist == 1 and snake["id"] != currentSnake["id"] and snakeLen >= currentSnakeLen:
+      return False
+    elif futureHead in snake["body"][1:-1]:
+      return False
+    elif snake["health"] == 100 and futureHead == snake["body"][-1]:
+      return False
+  return True
+
+def avoid_snakes2(futureHead, snakes, currentSnake, maximizingPlayer):
   for snake in snakes:
     snakeLen = len(snake["body"])
     currentSnakeLen = len(currentSnake["body"])
-    if futureHead == snake["body"][0] and snakeLen <= currentSnakeLen:
-      return False
-    elif futureHead in snake["body"][:-1]:
-      return False
-    elif snake["health"] == 100 and futureHead in snake["body"]:
-      return False
-    elif futureHead == snake["body"][0] and len(
-        snake["body"]) >= currentSnakeLen:
-      return False
-  return True
+    if maximizingPlayer:
+      #the minimizing player has not moved yet
+      dist = abs(snake["body"][0]["x"]-futureHead["x"]) + abs(snake["body"][0]["y"]-futureHead["y"])
+      if dist == 1 and snake["id"] != currentSnake["id"]:
+        if currentSnakeLen <= snakeLen:
+          return "Loss" # I would assume to lose here if the minimizing player is smart
+        #else:
+        #  return "Win" # I won't necessarily win here
+      
+      if snake["health"] == 100 and futureHead == snake["body"][-1]:
+        return "Loss"
+      elif futureHead in snake["body"][:-1]:
+        return "Loss"
+    else:
+      if futureHead == snake["body"][0]:
+        if currentSnakeLen >= snakeLen: #the minimizing player wins when we draw
+          return "Win"
+        else:
+          return "Loss"
+      elif snake["health"] == 100 and futureHead == snake["body"][-1]:
+        return "Loss"
+      elif futureHead in snake["body"][1:-1]:
+        return "Loss"
+  return "Avoid"
 
 def get_next(currentHead, nextMove):
   futureHead = {}
@@ -264,12 +302,22 @@ def minimax(event, myBoard, depth, maximizingPlayer, alpha, beta):
 def minimax_new_board(myBoard, move, maximizingPlayer):
   newBoard = copyBoard(myBoard)
 
+  alreadyMovedSnakes = []
+  notAlreadyMovedSnakes = []
   movingSnakes = []
   for snake in newBoard["snakes"]:
-    if maximizingPlayer and snake["id"] == newBoard["myId"]:
-      movingSnakes.append(snake)
-    elif not maximizingPlayer and snake["id"] != newBoard["myId"]:
-      movingSnakes.append(snake)
+    if maximizingPlayer:
+      if snake["id"] == newBoard["myId"]:
+        movingSnakes.append(snake)
+        notAlreadyMovedSnakes.append(snake)
+      else:
+        notAlreadyMovedSnakes.append(snake)
+    else:
+      if snake["id"] == newBoard["myId"]:
+        alreadyMovedSnakes.append(snake)
+      else:
+        movingSnakes.append(snake)
+        notAlreadyMovedSnakes.append(snake)
   
   hitWalls = []
   hitSnakes = []
@@ -280,10 +328,27 @@ def minimax_new_board(myBoard, move, maximizingPlayer):
     next = get_next(snake["body"][0], move)
     if not avoid_walls(next, newBoard["width"], newBoard["height"]):
       hitWalls.append(snake["id"])
-    elif not avoid_snakes(next, newBoard["snakes"], snake):
-      # modify for head collisions
+    elif not avoid_snakes(next, alreadyMovedSnakes, notAlreadyMovedSnakes, snake):
       hitSnakes.append(snake["id"])
     else:
+      """
+      result = avoid_snakes2(next, newBoard["snakes"], snake, maximizingPlayer)
+      if result == "Loss":
+        newBoard["end"] = True
+        if snake["id"] == newBoard["myId"]:
+          newBoard["winner"] = SCORE_NEG_GAME_END - 9  #minimizing player wins
+        else:
+          newBoard["winner"] = SCORE_GAME_END + 9  #maximizing player wins
+      elif result == "Win":
+        newBoard["end"] = True
+        if snake["id"] == newBoard["myId"]:
+          newBoard["winner"] = SCORE_GAME_END + 9  #maximizing player wins
+        else:
+          newBoard["winner"] = SCORE_NEG_GAME_END - 9  #minimizing player wins
+      """
+    
+    
+    
       # modify for head collisions
       snake["body"].insert(0, next)
       ateFood = False
