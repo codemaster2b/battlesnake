@@ -5,9 +5,6 @@
 #  |    |   \ / __ \|  |  |  | |  |_\  ___/ \___ \|   |  \/ __ \|    <\  ___/
 #  |________/(______/__|  |__| |____/\_____>______>___|__(______/__|__\\_____>
 #
-# This file can be a nice home for your Battlesnake logic and helper functions.
-#
-# To get you started we've included code to prevent your Battlesnake from moving backwards.
 # For more info see docs.battlesnake.com
 
 import random
@@ -54,11 +51,9 @@ def start(gameState: typing.Dict):
     random.seed(RandomSeed)
   print("GAME START")
 
-
 # end is called when your Battlesnake finishes a game
 def end(gameState: typing.Dict):
   print("GAME OVER\n")
-
 
 # move is called on every turn and returns your next move
 def move(gameState: typing.Dict) -> typing.Dict:
@@ -98,35 +93,6 @@ def avoid_snakes(futureHead, alreadyMovedSnakes, notAlreadyMovedSnakes, currentS
       return False
   return True
 
-def avoid_snakes2(futureHead, snakes, currentSnake, maximizingPlayer):
-  for snake in snakes:
-    snakeLen = len(snake["body"])
-    currentSnakeLen = len(currentSnake["body"])
-    if maximizingPlayer:
-      #the minimizing player has not moved yet
-      dist = abs(snake["body"][0]["x"]-futureHead["x"]) + abs(snake["body"][0]["y"]-futureHead["y"])
-      if dist == 1 and snake["id"] != currentSnake["id"]:
-        if currentSnakeLen <= snakeLen:
-          return "Loss" # I would assume to lose here if the minimizing player is smart
-        #else:
-        #  return "Win" # I won't necessarily win here
-      
-      if snake["health"] == 100 and futureHead == snake["body"][-1]:
-        return "Loss"
-      elif futureHead in snake["body"][:-1]:
-        return "Loss"
-    else:
-      if futureHead == snake["body"][0]:
-        if currentSnakeLen >= snakeLen: #the minimizing player wins when we draw
-          return "Win"
-        else:
-          return "Loss"
-      elif snake["health"] == 100 and futureHead == snake["body"][-1]:
-        return "Loss"
-      elif futureHead in snake["body"][1:-1]:
-        return "Loss"
-  return "Avoid"
-
 def get_next(currentHead, nextMove):
   futureHead = {}
   if nextMove == "left" or nextMove == "right":
@@ -149,8 +115,6 @@ def make_minimax_move(gameState: typing.Dict, timeLimit=0.35):
   while sleepCount < sleepDivisions and results.qsize() < 100:
     time.sleep(timeLimit / sleepDivisions)
     sleepCount += 1
-  
-  #time.sleep(timeLimit)
   event.set() #terminate the thread
 
   if results.qsize() > 0:
@@ -160,7 +124,7 @@ def make_minimax_move(gameState: typing.Dict, timeLimit=0.35):
     for move in PossibleMoves:
       next = get_next(gameState["you"]["body"][0], move)
       if avoid_walls(next, gameState["board"]["width"], gameState["board"]["height"]):
-        if avoid_snakes(next, gameState["board"]["snakes"], gameState["you"]):
+        if avoid_snakes(next, [], gameState["board"]["snakes"], gameState["you"]):
           goodMoves.append(move)
     if len(goodMoves) > 0:
       return random.choice(goodMoves)
@@ -309,15 +273,15 @@ def minimax_new_board(myBoard, move, maximizingPlayer):
     if maximizingPlayer:
       if snake["id"] == newBoard["myId"]:
         movingSnakes.append(snake)
-        notAlreadyMovedSnakes.append(snake)
+        notAlreadyMovedSnakes.append(snake.copy())
       else:
-        notAlreadyMovedSnakes.append(snake)
+        notAlreadyMovedSnakes.append(snake.copy())
     else:
       if snake["id"] == newBoard["myId"]:
         alreadyMovedSnakes.append(snake)
       else:
         movingSnakes.append(snake)
-        notAlreadyMovedSnakes.append(snake)
+        notAlreadyMovedSnakes.append(snake.copy())
   
   hitWalls = []
   hitSnakes = []
@@ -331,25 +295,6 @@ def minimax_new_board(myBoard, move, maximizingPlayer):
     elif not avoid_snakes(next, alreadyMovedSnakes, notAlreadyMovedSnakes, snake):
       hitSnakes.append(snake["id"])
     else:
-      """
-      result = avoid_snakes2(next, newBoard["snakes"], snake, maximizingPlayer)
-      if result == "Loss":
-        newBoard["end"] = True
-        if snake["id"] == newBoard["myId"]:
-          newBoard["winner"] = SCORE_NEG_GAME_END - 9  #minimizing player wins
-        else:
-          newBoard["winner"] = SCORE_GAME_END + 9  #maximizing player wins
-      elif result == "Win":
-        newBoard["end"] = True
-        if snake["id"] == newBoard["myId"]:
-          newBoard["winner"] = SCORE_GAME_END + 9  #maximizing player wins
-        else:
-          newBoard["winner"] = SCORE_NEG_GAME_END - 9  #minimizing player wins
-      """
-    
-    
-    
-      # modify for head collisions
       snake["body"].insert(0, next)
       ateFood = False
       for food in newBoard["food"]:
@@ -369,16 +314,12 @@ def minimax_new_board(myBoard, move, maximizingPlayer):
       if snake["health"] < 1:
         starvedSnakes.append(snake["id"])
 
-      # eat enemy snake (or be eaten) if possible
-      # opponent cannot be trusted to make a wise decision, so prefer to avoid enemy
-      for otherSnake in newBoard["snakes"]:
-        if otherSnake["id"] != snake["id"]:
-          if abs(otherSnake["body"][0]["x"] - snake["body"][0]["x"]) + abs(
-              otherSnake["body"][0]["y"] - snake["body"][0]["y"]) <= 1:
-            if snake["id"] == newBoard["myId"]:
-              eatenSnakes.append(snake["id"])
-            elif otherSnake["id"] == newBoard["myId"]:
-              eatenSnakes.append(otherSnake["id"])
+      # eat maximizing snake if possible
+      # minimizing snake has not moved so cannot be eaten for certain
+      if not maximizingPlayer:
+        for otherSnake in alreadyMovedSnakes:
+          if snake["body"][0] == otherSnake["body"][0] and len(snake["body"]) >= len(otherSnake["body"]):
+            eatenSnakes.append(otherSnake["id"])
 
   # maximizing player loses if in any loss state
   if newBoard["end"] == False and newBoard["myId"] in hitWalls:
@@ -394,14 +335,12 @@ def minimax_new_board(myBoard, move, maximizingPlayer):
     newBoard["end"] = True
     newBoard["winner"] = SCORE_NEG_GAME_END - 7  #minimizing player wins
 
-  # modify to prefer killing an opponent snake if I can
-  
   # maximizing player only wins if all opponents die
   someOpponentsLive = False
   someOpponentsDie = False
   for snake in newBoard["snakes"]:
     if snake["id"] != newBoard["myId"]:
-      if snake["id"] in hitWalls or snake["id"] in hitSnakes or snake["id"] in starvedSnakes:
+      if snake["id"] in hitWalls or snake["id"] in hitSnakes or snake["id"] in starvedSnakes or snake["id"] in eatenSnakes:
         someOpponentsDie = True
       else:
         someOpponentsLive = True
@@ -411,7 +350,6 @@ def minimax_new_board(myBoard, move, maximizingPlayer):
     newBoard["winner"] = SCORE_GAME_END  #maximizing player wins  
 
   return newBoard
-
 
 def calcFoodScore(myBoard, snake):
   if snake is None:
