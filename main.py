@@ -140,6 +140,7 @@ def make_minimax_iterating(gameState, event, queue):
   while not event.is_set() and depth < 100:
     myBoard = copy.deepcopy(gameState["board"])
     myBoard["myId"] = gameState["you"]["id"]
+    myBoard["map"] = gameState["game"]["map"]
     myBoard["end"] = False
     myBoard["winner"] = 0  #no winner by default
     value, move = minimax(event, myBoard, depth, True, SCORE_MIN, SCORE_MAX)
@@ -302,7 +303,7 @@ def minimax_new_board(myBoard, move, maximizingPlayer):
           ateFood = True
           newBoard["food"].remove(food)
           break
-      if snake["health"] < 100:
+      if snake["health"] < 100 and newBoard["map"] != "constrictor":
         snake["body"].pop()
       snake["health"] = snake["health"] - 1
       if "hazards" in newBoard.keys():
@@ -439,6 +440,7 @@ def copyBoard(myBoard):
   newBoard = {}
   newBoard["myId"] = myBoard["myId"]
   newBoard["end"] = myBoard["end"]
+  newBoard["map"] = myBoard["map"]
   newBoard["winner"] = myBoard["winner"]
   newBoard["width"] = myBoard["width"]
   newBoard["height"] = myBoard["height"]
