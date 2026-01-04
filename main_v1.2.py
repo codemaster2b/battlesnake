@@ -98,7 +98,7 @@ def get_next(currentHead, nextMove):
     futureHead["y"] = currentHead["y"] + MoveLookup[nextMove]
   return futureHead
 
-def make_minimax_move(gameState: typing.Dict, timeLimit=0.3):
+def make_minimax_move(gameState: typing.Dict, timeLimit=0.35):
   # this code will iterate as long as there is time
   gameState["board"]["myId"] = gameState["you"]["id"]
   gameState["board"]["map"] = gameState["game"]["map"]
@@ -107,7 +107,7 @@ def make_minimax_move(gameState: typing.Dict, timeLimit=0.3):
   thread = threading.Thread(target=make_minimax_iterating, args=(gameState, event, results))
   thread.start()
   
-  sleepDivisions = 10
+  sleepDivisions = 5
   sleepCount = 0
   while sleepCount < sleepDivisions and results.qsize() < 100:
     time.sleep(timeLimit / sleepDivisions)
