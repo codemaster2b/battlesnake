@@ -15,7 +15,8 @@ import time
 import threading
 import queue
 import numpy as np
-import datetime
+import cProfile, pstats, io
+from pstats import SortKey
 
 RandomSeed = None
 PossibleMoves = ["up", "down", "left", "right"]
@@ -56,8 +57,7 @@ def end(gameState: typing.Dict):
 
 # move is called on every turn and returns your next move
 def move(gameState: typing.Dict) -> typing.Dict:
-  endTime = datetime.datetime.now() + datetime.timedelta(seconds=0.35)
-  nextMove = make_minimax_move(gameState, endTime)
+  nextMove = make_minimax_move(gameState)
   print(f"MOVE {gameState['turn']}: {nextMove}")
   return {"move": nextMove}
 
@@ -98,13 +98,22 @@ def get_next(currentHead, nextMove):
     futureHead["y"] = currentHead["y"] + MoveLookup[nextMove]
   return futureHead
 
-def make_minimax_move(gameState: typing.Dict, endTime):
+def make_minimax_move(gameState: typing.Dict, timeLimit=0.35):
   # this code will iterate as long as there is time
   gameState["board"]["myId"] = gameState["you"]["id"]
   gameState["board"]["map"] = gameState["game"]["map"]
   results = queue.LifoQueue()
-  make_minimax_iterating(gameState, results, endTime)
+  event = threading.Event()
+  thread = threading.Thread(target=make_minimax_iterating, args=(gameState, event, results))
+  thread.start()
   
+  sleepDivisions = 5
+  sleepCount = 0
+  while sleepCount < sleepDivisions and results.qsize() < 100:
+    time.sleep(timeLimit / sleepDivisions)
+    sleepCount += 1
+  event.set() #terminate the thread
+
   if results.qsize() > 0:
     return results.get_nowait()
   else:
@@ -119,27 +128,39 @@ def make_minimax_move(gameState: typing.Dict, endTime):
     else:
       return random.choice(PossibleMoves)
 
-def make_minimax_iterating(gameState, queue, endTime):
+def make_minimax_iterating(gameState, event, queue):
+  if UseProfiling:
+    pr = cProfile.Profile()
+    pr.enable()
+
   depth = 2
-  times = []
-  times.append(datetime.datetime.now())
-  while datetime.datetime.now() < endTime and depth < 100:
+  while not event.is_set() and depth < 100:
     myBoard = copy.deepcopy(gameState["board"])
+    myBoard["myId"] = gameState["you"]["id"]
+    myBoard["map"] = gameState["game"]["map"]
     myBoard["end"] = False
     myBoard["winner"] = 0  #no winner by default
-    value, move = minimax(endTime, myBoard, depth, True, SCORE_MIN, SCORE_MAX)
-    times.append(datetime.datetime.now())
-    if move in PossibleMoves:
-      print("iteration depth",depth,"best move",move)
-      queue.put(move)
-    depth += 2
-    if times[-1] - times[-2] >= endTime - datetime.datetime.now():
-      break
+    value, move = minimax(event, myBoard, depth, True, SCORE_MIN, SCORE_MAX)
 
+    if not event.is_set():
+      if value <= SCORE_NEG_GAME_END: #detect a hopeless situation and exit early 
+        event.set()
+      else:
+        print("iteration depth",depth,"best move",move)
+        queue.put(move)
+        depth += 2
+
+  if UseProfiling:
+    pr.disable()
+    s = io.StringIO()
+    sortby = SortKey.CUMULATIVE
+    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    ps.print_stats()
+    print(s.getvalue())
   return
 
-def minimax(endTime, myBoard, depth, maximizingPlayer, alpha, beta):
-  if datetime.datetime.now() >= endTime:
+def minimax(event, myBoard, depth, maximizingPlayer, alpha, beta):
+  if event.is_set():
     return (0, "---")
   bestMoves = PossibleMoves
   bestValue = 0
@@ -168,11 +189,11 @@ def minimax(endTime, myBoard, depth, maximizingPlayer, alpha, beta):
     bestValue = SCORE_MIN
     bestMoves = []
     for move in PossibleMoves:
-      if datetime.datetime.now() >= endTime:
+      if event.is_set():
         return (0, "---")
       #print("my",depth,move)
       newBoard = minimax_new_board(myBoard, move, maximizingPlayer)
-      value, m = minimax(endTime, newBoard, depth - 1, not maximizingPlayer, alpha, beta)
+      value, m = minimax(event, newBoard, depth - 1, not maximizingPlayer, alpha, beta)
       if value == bestValue:
         bestMoves = bestMoves + [move]
       elif value > bestValue:
@@ -190,11 +211,11 @@ def minimax(endTime, myBoard, depth, maximizingPlayer, alpha, beta):
     qs, ps = [], []
     x, S = 0, 0
     for move in PossibleMoves:
-      if datetime.datetime.now() >= endTime:
+      if event.is_set():
         return (0, "---")
       #print("other",depth,move)
       newBoard = minimax_new_board(myBoard, move, maximizingPlayer)
-      value, m = minimax(endTime, newBoard, depth - 1, not maximizingPlayer, alpha, beta)
+      value, m = minimax(event, newBoard, depth - 1, not maximizingPlayer, alpha, beta)
       if UseProbMiniMax:
         # if moves leads to an instant win, just take it
         if (value <= SCORE_NEG_GAME_END):
