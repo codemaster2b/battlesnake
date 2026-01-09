@@ -39,7 +39,7 @@ def info() -> typing.Dict:
   return {
     "apiversion": "1",
     "author": "codemaster2b",
-    "color": "#03fcf4",
+    "color": "#03c0c0",
     "head": "pixel",
     "tail": "pixel",
   }
@@ -56,7 +56,7 @@ def end(gameState: typing.Dict):
 
 # move is called on every turn and returns your next move
 def move(gameState: typing.Dict) -> typing.Dict:
-  endTime = datetime.datetime.now() + datetime.timedelta(seconds=0.35)
+  endTime = datetime.datetime.now() + datetime.timedelta(seconds=0.4)
   nextMove = make_minimax_move(gameState, endTime)
   print(f"MOVE {gameState['turn']}: {nextMove}")
   return {"move": nextMove}
@@ -125,16 +125,23 @@ def make_minimax_iterating(gameState, queue, endTime):
   times.append(datetime.datetime.now())
   while datetime.datetime.now() < endTime and depth < 100:
     myBoard = copy.deepcopy(gameState["board"])
+    myBoard["myId"] = gameState["you"]["id"]
+    myBoard["map"] = gameState["game"]["map"]
     myBoard["end"] = False
     myBoard["winner"] = 0  #no winner by default
     value, move = minimax(endTime, myBoard, depth, True, SCORE_MIN, SCORE_MAX)
     times.append(datetime.datetime.now())
-    if move in PossibleMoves:
-      print("iteration depth",depth,"best move",move)
-      queue.put(move)
+    
+    if datetime.datetime.now() < endTime:
+      if value <= SCORE_NEG_GAME_END: #detect a hopeless situation and exit early 
+        return
+      elif move in PossibleMoves:
+        print("iteration depth",depth,"best move",move)
+        queue.put(move)
+    
     depth += 2
     if times[-1] - times[-2] >= endTime - datetime.datetime.now():
-      break
+      return
 
   return
 
