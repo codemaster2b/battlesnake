@@ -15,6 +15,7 @@ import time
 import threading
 import queue
 import numpy as np
+import datetime
 
 PossibleMoves = ["up", "down", "left", "right"]
 def get_next(currentHead, nextMove):
@@ -57,16 +58,12 @@ def end(gameState: typing.Dict):
 
 # move is called on every turn and returns your next move
 def move(gameState: typing.Dict) -> typing.Dict:
+  endTime = datetime.datetime.now() + datetime.timedelta(seconds=0.4)
   gameState["board"]["myId"] = gameState["you"]["id"]
   gameState["board"]["map"] = gameState["game"]["map"]
   results = queue.LifoQueue()
-  event = threading.Event()
-  thread = threading.Thread(target=make_move, args=(gameState, event, results))
-  thread.start()
-  time.sleep(.300)
-  event.set() #terminate the thread
+  make_move(gameState, results, endTime)
 
-  nextMove = random.choice(PossibleMoves)
   if results.qsize() > 0:
     nextMove = results.get_nowait()
   else:
@@ -82,7 +79,7 @@ def move(gameState: typing.Dict) -> typing.Dict:
   print(f"MOVE {gameState['turn']}: {nextMove}")
   return {"move": nextMove}
 
-def make_move(gameState, event, queue):
+def make_move(gameState, results, endTime):
     goodMoves = []
     for move in PossibleMoves:
       next = get_next(gameState["you"]["body"][0], move)
@@ -90,9 +87,10 @@ def make_move(gameState, event, queue):
         if avoid_snakes(next, gameState["board"], gameState["you"]):
           goodMoves.append(move)
     if len(goodMoves) > 0:
-      return random.choice(goodMoves)
+      results.put(random.choice(goodMoves))
     else:
-      return random.choice(PossibleMoves)
+      results.put(random.choice(PossibleMoves))
+    return
 
 def avoid_walls(futureHead, boardWidth, boardHeight):
   x = int(futureHead["x"])
