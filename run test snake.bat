@@ -1,0 +1,1 @@
+start cmd.exe /k py %~dp0main_v3.py --port 8002
