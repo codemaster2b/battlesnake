@@ -15,429 +15,359 @@ import time
 import threading
 import queue
 import numpy as np
-import datetime
+from datetime import datetime, timedelta
 
-RandomSeed = None
-PossibleMoves = ["up", "down", "left", "right"]
-BestMove = "up"
-MoveLookup = {"left": -1, "right": 1, "up": 1, "down": -1}
-UseProbMiniMax = True
-UseProfiling = False
+possible_moves = ["up", "down", "left", "right"]
+possible_events = ["wall", "body", "head", "health", "end"]
 
-G_END_SPAN = 100
-G_END_SCORE = 100000000
-SCORE_MAX = G_END_SCORE + G_END_SPAN
-SCORE_MIN = -G_END_SCORE - G_END_SPAN
-SCORE_GAME_END = G_END_SCORE
-SCORE_NEG_GAME_END = -G_END_SCORE
+def print_and_log(text):
+    print(text)
+    #with open("output.log", "a") as f:
+    #    f.write(f"{text}\n")
+
+def get_next(origin, move):
+    next_loc = origin.copy()
+    if move == "left":
+        next_loc["x"] -= 1
+    elif move == "right":
+        next_loc["x"] += 1
+    elif move == "down":
+        next_loc["y"] -= 1
+    elif move == "up":
+        next_loc["y"] += 1
+    return next_loc
 
 # info is called when you create your Battlesnake on play.battlesnake.com
 # and controls your Battlesnake's appearance
 # TIP: If you open your Battlesnake URL in a browser you should see this data
 def info() -> typing.Dict:
-  print("INFO")
-  return {
-    "apiversion": "1",
-    "author": "codemaster2b",
-    "color": "#03fcf4",
-    "head": "pixel",
-    "tail": "pixel",
-  }
+    print_and_log("INFO")
+    return {
+        "apiversion": "1",
+        "author": "codemaster2b",
+        "color": "#03fcf4",
+        "head": "pixel",
+        "tail": "pixel",
+    }
 
 # start is called when your Battlesnake begins a game
 def start(gameState: typing.Dict):
-  if RandomSeed is not None:
-    random.seed(RandomSeed)
-  print("GAME START")
+    print_and_log("GAME START")
 
 # end is called when your Battlesnake finishes a game
 def end(gameState: typing.Dict):
-  print("GAME OVER\n")
+    print_and_log("GAME OVER\n")
 
 # move is called on every turn and returns your next move
 def move(gameState: typing.Dict) -> typing.Dict:
-  endTime = datetime.datetime.now() + datetime.timedelta(seconds=0.4)
-  nextMove = make_minimax_move(gameState, endTime)
-  print(f"MOVE {gameState['turn']}: {nextMove}")
-  return {"move": nextMove}
-
-def avoid_walls(futureHead, boardWidth, boardHeight):
-  x = int(futureHead["x"])
-  y = int(futureHead["y"])
-  if x < 0 or y < 0 or x >= boardWidth or y >= boardHeight:
-    return False
-  else:
-    return True
-
-def avoid_snakes(futureHead, newBoard, currentSnake):
-  currentSnakeLen = len(currentSnake["body"])
-  for snake in newBoard["snakes"]:
-    snakeLen = len(snake["body"])    
-    if futureHead in snake["body"][1:-1]:
-      return False
-    if snake["id"] != currentSnake["id"]:
-      if (snake["health"] == 100 or newBoard["map"] != "constrictor" or snake["id"] == newBoard["myId"]) and futureHead == snake["body"][-1]:
-        return False
-      elif snake["id"] == newBoard["myId"] and snakeLen >= currentSnakeLen:
-        #avoid connecting with another snake head that is >= my length and has moved already    
-        if futureHead == snake["body"][0]:
-          return False
-      elif snakeLen >= currentSnakeLen:
-        #avoid being within 1 of another snake head that is >= my length and has not moved yet
-        if abs(snake["body"][0]["x"]-futureHead["x"]) + abs(snake["body"][0]["y"]-futureHead["y"]) == 1:
-          return False
-  return True  
-
-def get_next(currentHead, nextMove):
-  futureHead = {}
-  if nextMove == "left" or nextMove == "right":
-    futureHead["x"] = currentHead["x"] + MoveLookup[nextMove]
-    futureHead["y"] = currentHead["y"]
-  elif nextMove == "up" or nextMove == "down":
-    futureHead["x"] = currentHead["x"]
-    futureHead["y"] = currentHead["y"] + MoveLookup[nextMove]
-  return futureHead
-
-def make_minimax_move(gameState: typing.Dict, endTime):
-  # this code will iterate as long as there is time
-  gameState["board"]["myId"] = gameState["you"]["id"]
-  gameState["board"]["map"] = gameState["game"]["map"]
-  results = queue.LifoQueue()
-  make_minimax_iterating(gameState, results, endTime)
+    gameState["board"]["myId"] = gameState["you"]["id"]
+    gameState["board"]["map"] = gameState["game"]["map"]
+    results = queue.LifoQueue()
+    end_time = datetime.now() + timedelta(seconds=0.4)
+    move_iterating(gameState, results, end_time)
   
-  if results.qsize() > 0:
-    return results.get_nowait()
-  else:
-    goodMoves = []
-    for move in PossibleMoves:
-      next = get_next(gameState["you"]["body"][0], move)
-      if avoid_walls(next, gameState["board"]["width"], gameState["board"]["height"]):
-        if avoid_snakes(next, gameState["board"], gameState["you"]):
-          goodMoves.append(move)
-    if len(goodMoves) > 0:
-      return random.choice(goodMoves)
-    else:
-      return random.choice(PossibleMoves)
+    next_move = random.choice(possible_moves)
+    if results.qsize() > 0:
+        next_move = results.get_nowait()
+    print_and_log(f"MOVE {gameState['turn']}: {next_move}")
+    return {"move": next_move}
 
-def make_minimax_iterating(gameState, queue, endTime):
-  depth = 2
-  times = []
-  times.append(datetime.datetime.now())
-  while datetime.datetime.now() < endTime and depth < 100:
-    myBoard = copy.deepcopy(gameState["board"])
-    myBoard["myId"] = gameState["you"]["id"]
-    myBoard["map"] = gameState["game"]["map"]
-    myBoard["end"] = False
-    myBoard["winner"] = 0  #no winner by default
-    value, move = minimax(endTime, myBoard, depth, True, SCORE_MIN, SCORE_MAX)
-    times.append(datetime.datetime.now())
-    
-    if datetime.datetime.now() < endTime:
-      if value <= SCORE_NEG_GAME_END: #detect a hopeless situation and exit early 
-        return
-      elif move in PossibleMoves:
-        print("iteration depth",depth,"best move",move)
-        queue.put(move)
-    
-    depth += 2
-    if times[-1] - times[-2] >= endTime - datetime.datetime.now():
-      return
+def move_iterating(gameState, queue, end_time):
+    max_depth = 1
+    times = []
+    times.append(datetime.now())
+    while datetime.now() < end_time and max_depth < 51:
+        value, move = minimax(end_time, gameState["board"], 0, max_depth, True, -2000000, 2000000)
+        times.append(datetime.now())    
+        if datetime.now() < end_time:
+            if value <= -1000000: #detect a hopeless situation and exit early 
+                return
+            elif move in possible_moves:
+                print_and_log(f"iteration depth{max_depth} best move{move}")
+                queue.put(move)
 
-  return
+        max_depth += 1
+        if times[-1] - times[-2] >= end_time - datetime.now():
+            return
+    return
 
-def minimax(endTime, myBoard, depth, maximizingPlayer, alpha, beta):
-  if datetime.datetime.now() >= endTime:
-    return (0, "---")
-  bestMoves = PossibleMoves
-  bestValue = 0
-
-  if depth == 0 or myBoard["end"]:
-    if myBoard["end"]:
-      #print("game end", depth, myBoard["winner"])
-      return (myBoard["winner"], "---")      
-
-    estimate = 0
-    maxRoomScore = 10
-    for snake in myBoard["snakes"]:
-      if snake["id"] == myBoard["myId"]:
-        estimate -= calcFoodScore(myBoard, snake)
-        estimate += calcHazardScore(myBoard, snake)
-        estimate += calcLengthScore(snake)
-        estimate += calcRunwayScore(myBoard, snake, maxRoomScore)
-      else:
-        estimate += calcFoodScore(myBoard, snake)
-        estimate -= calcHazardScore(myBoard, snake)
-        estimate -= calcLengthScore(snake)
-        estimate -= calcRunwayScore(myBoard, snake, maxRoomScore)
-
-    return (estimate, "---")
-  if maximizingPlayer:
-    bestValue = SCORE_MIN
-    bestMoves = []
-    for move in PossibleMoves:
-      if datetime.datetime.now() >= endTime:
+def minimax(end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
+    if datetime.now() >= end_time:
         return (0, "---")
-      #print("my",depth,move)
-      newBoard = minimax_new_board(myBoard, move, maximizingPlayer)
-      value, m = minimax(endTime, newBoard, depth - 1, not maximizingPlayer, alpha, beta)
-      if value == bestValue:
-        bestMoves = bestMoves + [move]
-      elif value > bestValue:
-        bestValue = value
-        bestMoves = [move]
-      if not UseProbMiniMax:
-        alpha = max(alpha, bestValue)
-        if beta < alpha: #modified from <=
-          break
-    #print("my",depth,bestValue,bestMoves)
-    return (bestValue, random.choice(bestMoves))
-  else:  # minimizing player
-    bestValue = SCORE_MAX
     bestMoves = []
-    qs, ps = [], []
-    x, S = 0, 0
-    for move in PossibleMoves:
-      if datetime.datetime.now() >= endTime:
-        return (0, "---")
-      #print("other",depth,move)
-      newBoard = minimax_new_board(myBoard, move, maximizingPlayer)
-      value, m = minimax(endTime, newBoard, depth - 1, not maximizingPlayer, alpha, beta)
-      if UseProbMiniMax:
-        # if moves leads to an instant win, just take it
-        if (value <= SCORE_NEG_GAME_END):
-          return (value, [move])
-        # if moves leads to instant loss, don't consider it
-        elif (value >= SCORE_GAME_END):
-          continue
-        
-        bestMoves = bestMoves + [move]
-        qs.append(value)
-        x += (1.01**-value)      
-      else:
-        if value == bestValue:
-          bestMoves = bestMoves + [move]
-        elif value < bestValue:
-          bestValue = value
-          bestMoves = [move]
-        beta = min(beta, bestValue)
-        if beta < alpha: #modified from <=
-          break
+    bestValue = 0
 
-    if UseProbMiniMax:
-      # if no moves are added, all lead to instant loss, so give up
-      if (len(qs) == 0):
-        return (SCORE_GAME_END, random.choice(PossibleMoves))
-      
-      # if length is one, then there is only one option
-      elif (len(qs) == 1):
-        return (qs[0], bestMoves[0])
-      
-      # probability is calculated with a bias for negative numbers
-      for i in range(len(qs)):
-        ps.append((1.01**-qs[i]) / x)
-        S += ps[i] * qs[i]
-      if (len(qs) == 2):
-        return (S, random.choices(bestMoves, weights=[ps[0], ps[1]])[0])
-      elif (len(qs) == 3):
-        return (S, random.choices(bestMoves, weights=[ps[0], ps[1], ps[2]])[0])
-      else:
-        return (S, random.choice(PossibleMoves))
-    
-    #print("other",depth,bestValue,bestMoves)
-    return (bestValue, random.choice(bestMoves))
-
-# Make a board move
-def minimax_new_board(myBoard, move, maximizingPlayer):
-  newBoard = copyBoard(myBoard)
-
-  alreadyMovedSnakes = []
-  notAlreadyMovedSnakes = []
-  movingSnakes = []
-  for snake in newBoard["snakes"]:
+    if depth == max_depth:
+        estimate = end_score(myBoard, depth)
+        return (estimate, "---")
     if maximizingPlayer:
-      if snake["id"] == newBoard["myId"]:
-        movingSnakes.append(snake)
-        notAlreadyMovedSnakes.append(snake.copy())
-      else:
-        notAlreadyMovedSnakes.append(snake.copy())
+        bestValue = -2000000
+        for move in possible_moves:
+            if datetime.now() >= end_time:
+                return (0, "---")
+            newBoard = copy_board(myBoard)
+            immediate_score = move_and_score(newBoard, move, maximizingPlayer, depth, max_depth)
+            print_and_log(f"move={move} depth={depth} isMax={maximizingPlayer} immediate_score={immediate_score}")
+            if immediate_score > -500000:
+                value, m = minimax(end_time, newBoard, depth, max_depth, not maximizingPlayer, alpha, beta)
+                value = round(value * 0.99 + immediate_score,2)
+                value = min(max(value, -1000000),1000000)
+                print_and_log(f"move={move} isMax={maximizingPlayer} value={value}")
+                if value == bestValue:
+                    bestMoves = bestMoves + [move]
+                elif value > bestValue:
+                    bestValue = value
+                    bestMoves = [move]
+                alpha = max(alpha, bestValue)
+                if beta < alpha:
+                    break
+    else:  # minimizing player
+        bestValue = 2000000
+        for move in possible_moves:
+            if datetime.now() >= end_time:
+                return (0, "---")
+            newBoard = copy_board(myBoard)
+            immediate_score = move_and_score(newBoard, move, maximizingPlayer, depth, max_depth)
+            print_and_log(f"move={move} depth={depth} isMax={maximizingPlayer} immediate_score={immediate_score}")
+            if immediate_score < 500000:
+                value, m = minimax(end_time, newBoard, depth + 1, max_depth, not maximizingPlayer, alpha, beta)
+                value = round(value * 0.99 + immediate_score,2)
+                value = min(max(value, -1000000),1000000)
+                print_and_log(f"move={move} isMax={maximizingPlayer} value={value}")
+                if value == bestValue:
+                    bestMoves = bestMoves + [move]
+                elif value < bestValue:
+                    bestValue = value
+                    bestMoves = [move]
+                beta = min(beta, bestValue)
+                if beta < alpha:
+                    break
+
+    if len(bestMoves) > 0:
+        return bestValue, random.choice(bestMoves)
     else:
-      if snake["id"] == newBoard["myId"]:
-        alreadyMovedSnakes.append(snake)
-      else:
-        movingSnakes.append(snake)
-        notAlreadyMovedSnakes.append(snake.copy())
-  
-  hitWalls = []
-  hitSnakes = []
-  starvedSnakes = []
-  eatenSnakes = []
-  
-  for snake in movingSnakes:
-    next = get_next(snake["body"][0], move)
-    if not avoid_walls(next, newBoard["width"], newBoard["height"]):
-      hitWalls.append(snake["id"])
-    elif not avoid_snakes(next, newBoard, snake):
-      hitSnakes.append(snake["id"])
-    else:
-      snake["body"].insert(0, next)
-      ateFood = False
-      for food in newBoard["food"]:
-        if food["x"] == next["x"] and food["y"] == next["y"]:
-          ateFood = True
-          newBoard["food"].remove(food)
-          break
-      if snake["health"] < 100 and newBoard["map"] != "constrictor":
-        snake["body"].pop()
-      snake["health"] = snake["health"] - 1
-      if "hazards" in newBoard.keys():
-        for hazard in newBoard["hazards"]:
-          if hazard["x"] == next["x"] and hazard["y"] == next["y"]:
-            snake["health"] = snake["health"] - 15
-      if ateFood:
-        snake["health"] = 100
-      if snake["health"] < 1:
-        starvedSnakes.append(snake["id"])
+        return bestValue, "---"
 
-      # eat maximizing snake if possible
-      # minimizing snake has not moved so cannot be eaten for certain
-      if not maximizingPlayer:
-        for otherSnake in alreadyMovedSnakes:
-          if snake["body"][0] == otherSnake["body"][0] and len(snake["body"]) >= len(otherSnake["body"]):
-            eatenSnakes.append(otherSnake["id"])
-
-  # maximizing player loses if in any loss state
-  if newBoard["end"] == False and newBoard["myId"] in hitWalls:
-    newBoard["end"] = True
-    newBoard["winner"] = SCORE_NEG_GAME_END #minimizing player wins
-  if newBoard["end"] == False and newBoard["myId"] in hitSnakes:
-    newBoard["end"] = True
-    newBoard["winner"] = SCORE_NEG_GAME_END #minimizing player wins
-  if newBoard["end"] == False and newBoard["myId"] in starvedSnakes:
-    newBoard["end"] = True
-    newBoard["winner"] = SCORE_NEG_GAME_END #minimizing player wins
-  if newBoard["end"] == False and newBoard["myId"] in eatenSnakes:
-    newBoard["end"] = True
-    newBoard["winner"] = SCORE_NEG_GAME_END #minimizing player wins
-
-  # maximizing player only wins if all opponents die
-  someOpponentsLive = False
-  someOpponentsDie = False
-  for snake in newBoard["snakes"]:
-    if snake["id"] != newBoard["myId"]:
-      if snake["id"] in hitWalls or snake["id"] in hitSnakes or snake["id"] in starvedSnakes or snake["id"] in eatenSnakes:
-        someOpponentsDie = True
-      else:
-        someOpponentsLive = True
-
-  if someOpponentsDie and not someOpponentsLive:
-    newBoard["end"] = True
-    newBoard["winner"] = SCORE_GAME_END  #maximizing player wins  
-
-  return newBoard
-
-def calcFoodScore(myBoard, snake):
-  if snake is None:
-    return 0
-  else:
-    foodScore = myBoard["width"] + myBoard["height"]
-    head = snake["body"][0]
-    for food in myBoard["food"]:
-      foodScore = min(foodScore, abs(food["x"] - head["x"]) + abs(food["y"] - head["y"]))
-    return foodScore
-
-def calcHazardScore(myBoard, snake):
-  if snake is None or "hazards" not in myBoard.keys():
-    return 0
-  else:
-    next = snake["body"][0]
-    for hazard in myBoard["hazards"]:
-      if hazard["x"] == next["x"] and hazard["y"] == next["y"]:
-        return -115
-    return 0
-
-def calcLengthScore(snake):
-  if snake is None:
-    return 0
-  else:
-    return (len(snake["body"]) + int(snake["health"] / 100)) * 25
-
-def calcRunwayScore(myBoard, snake, limit):
-  if snake is None:
-    return 0
-  else:
-    #create snake body array to avoid
-    snakeLen = 0
-    for s in myBoard["snakes"]:
-      snakeLen += len(s["body"])
-    
-    snakeBodies = [0 for i in range(snakeLen)]
-    snakeCount = 0
-    for s in myBoard["snakes"]:
-      for part in s["body"]:
-        snakeBodies[snakeCount] = part["y"]*100+part["x"]
-        snakeCount += 1
-  
-    #create discovery nodes
-    discovered = [0 for i in range(121)]
-    distances = [0 for i in range(121)]
-    discovered[0] = snake["body"][0]["y"]*100+snake["body"][0]["x"]
-    count = 1
-    
-    index = 0
-    while index < count and distances[count-1] < limit:
-      node = discovered[index]
-
-      node -= 100
-      if node >= 0 and not node in snakeBodies and not node in discovered[:count]:
-        discovered[count] = node
-        distances[count] = distances[index] + 1
-        count += 1
-      node += 100
-
-      node += 100
-      if node//100 < myBoard["height"] and not node in snakeBodies and not node in discovered[:count]:
-        discovered[count] = node
-        distances[count] = distances[index] + 1
-        count += 1
-      node -= 100
-
-      node -= 1
-      if node%100 >= 0 and node%100 < 99 and not node in snakeBodies and not node in discovered[:count]:
-        discovered[count] = node
-        distances[count] = distances[index] + 1
-        count += 1
-      node += 1
-
-      node += 1
-      if node%100 < myBoard["width"] and not node in snakeBodies and not node in discovered[:count]:
-        discovered[count] = node
-        distances[count] = distances[index] + 1
-        count += 1
-      node -= 1
-
-      index += 1
-
-    return distances[count-1] * (int(25/limit) + 1)
-
-def copyBoard(myBoard):
-  newBoard = {}
-  newBoard["myId"] = myBoard["myId"]
-  newBoard["end"] = myBoard["end"]
-  newBoard["map"] = myBoard["map"]
-  newBoard["winner"] = myBoard["winner"]
-  newBoard["width"] = myBoard["width"]
-  newBoard["height"] = myBoard["height"]
+def copy_board(myBoard):
+  newBoard = myBoard.copy()
   newBoard["food"] = myBoard["food"].copy()
   newBoard["hazards"] = myBoard["hazards"].copy()
   newBoard["snakes"] = []
   for s in myBoard["snakes"]:
-    newSnake = {}
-    newSnake["id"] = s["id"]
-    newSnake["health"] = s["health"]
+    newSnake = s.copy()
     newSnake["body"] = s["body"].copy()
     newBoard["snakes"].append(newSnake)
   return newBoard
   
+def end_score(myBoard, depth):
+    estimate = 0
+    for snake in myBoard["snakes"]:
+        f = food_score(myBoard, snake)
+        h = hazard_score(myBoard, snake)
+        l = length_score(snake)
+        p = path_score(myBoard, snake, snake["body"][0])
+        snake_score = f + h + l + p
+        if snake["id"] == myBoard["myId"]:
+            estimate += snake_score
+        else:
+            estimate -= snake_score
+    return estimate
+
+def move_and_score(newBoard, move, maximizingPlayer, depth, max_depth):
+    estimate = 0
+
+    my_snake = {}
+    moving_snakes = []
+    for snake in newBoard["snakes"]:
+        if snake["id"] == newBoard["myId"]:
+            my_snake = snake
+            if maximizingPlayer:
+                moving_snakes.append(snake)
+        elif not maximizingPlayer and snake["id"] != newBoard["myId"]:
+            moving_snakes.append(snake)
+        
+    for snake in moving_snakes:
+        next = get_next(snake["body"][0], move)
+        snake_score = avoid_snakes(next, newBoard, snake, depth)
+        
+        if not avoid_walls(next, newBoard["width"], newBoard["height"]):
+            snake_score = -1000000 #wall
+        else:
+            snake["body"].insert(0, next)
+            ateFood = False
+            for food in newBoard["food"]:
+                if food["x"] == next["x"] and food["y"] == next["y"]:
+                    ateFood = True
+                    newBoard["food"].remove(food)
+                    break
+            if snake["health"] < 100 and newBoard["map"] != "constrictor":
+                snake["body"].pop()
+                snake["health"] = snake["health"] - 1
+            if "hazards" in newBoard.keys():
+                for hazard in newBoard["hazards"]:
+                    if hazard["x"] == next["x"] and hazard["y"] == next["y"]:
+                        snake["health"] = snake["health"] - 14
+            if ateFood:
+                snake["health"] = 100
+            if snake["health"] < 1:
+                snake_score = -1000000 #health
+
+        if snake["id"] == newBoard["myId"]:
+            estimate += snake_score
+        else:
+            estimate -= snake_score / 4
+    return estimate
+
+def avoid_walls(futureHead, boardWidth, boardHeight):
+    x = int(futureHead["x"])
+    y = int(futureHead["y"])
+    if x < 0 or y < 0 or x >= boardWidth or y >= boardHeight:
+        return False
+    else:
+        return True
+
+def avoid_snakes(futureHead, newBoard, currentSnake, depth):
+    currentSnakeLen = len(currentSnake["body"])
+    for snake in newBoard["snakes"]:
+        snakeLen = len(snake["body"])
+        if depth < snakeLen - 2 and futureHead in snake["body"][depth+1:-1]:
+            return -1000000 #dead if hit snake body
+        elif futureHead in snake["body"][1:-1]:
+            return -200000 #maybe dead if hit possible snake body
+        
+        if snake["id"] != currentSnake["id"]:
+            dx0 = abs(snake["body"][0]["x"]-futureHead["x"])
+            dy0 = abs(snake["body"][0]["y"]-futureHead["y"])
+            dx1 = abs(snake["body"][1]["x"]-currentSnake["body"][0]["x"])
+            dy1 = abs(snake["body"][1]["y"]-currentSnake["body"][0]["y"])
+
+            dx2 = abs(snake["body"][1]["x"]-futureHead["x"])
+            dy2 = abs(snake["body"][1]["y"]-futureHead["y"])
+            dx3 = abs(snake["body"][2]["x"]-currentSnake["body"][0]["x"])
+            dy3 = abs(snake["body"][2]["y"]-currentSnake["body"][0]["y"])
+            
+            if (snake["health"] == 100 or newBoard["map"] != "constrictor" or snake["id"] == newBoard["myId"]) and futureHead == snake["body"][-1]:
+                return -1000000
+            elif snake["id"] == newBoard["myId"] and snakeLen >= currentSnakeLen:
+                #avoid connecting with another snake head that is >= my length and has moved already    
+                if dx0 + dy0 == 0:
+                    return -100000
+                #avoid a stalker snake that is >= my length and has moved already    
+                elif dx2 + dy2 == 2 and dx3 + dy3 == 2:
+                    return -100000
+            elif snakeLen >= currentSnakeLen:
+                #avoid being within 1 of another snake head that is >= my length and has not moved yet
+                if dx0 + dy0 == 1:
+                    return -100000
+                #avoid a stalker snake that is >= my length and has not moved yet    
+                elif dx0 + dy0 == 2 and dx1 + dy1 == 2:
+                    return -100000
+    return 0
+
+def food_score(myBoard, snake):
+    score = myBoard["width"] + myBoard["height"]
+    head = snake["body"][0]
+    for food in myBoard["food"]:
+        score = min(score, abs(food["x"] - head["x"]) + abs(food["y"] - head["y"]))
+    return -1 * score
+
+def hazard_score(myBoard, snake):
+    return int(-500 / (min(snake["health"],1)))
+
+def length_score(snake):
+    return (len(snake["body"]) + int(snake["health"] / 100)) * 25 + snake["health"]
+
+def path_score(myBoard, current_snake, move):
+    width = myBoard["width"]
+    height = myBoard["height"]
+    max_cost = current_snake["health"] - 1
+    
+    #make a cost map including hazards
+    costs = [1 for i in range(121)]
+    if "hazards" in myBoard.keys():
+        for hazard in myBoard["hazards"]:
+            hazard_index = hazard["y"] * 11 + hazard["x"]
+            costs[hazard_index] += 14
+    
+    #find more runway for the snake to avoid early death
+    found = []
+    visited = []
+    found_h = []
+    visited_h = []
+    distances = [0 for i in range(121)]
+    
+    #snakes are already visited
+    for snake in myBoard["snakes"]:
+        for part in snake["body"]:
+            if move != current_snake["body"][0]: #works with both immediate and depth=0 cases
+                part_index = part["y"] * 11 + part["x"]
+                found.append(part_index)
+                visited.append(part_index)
+                distances[part_index] = 0
+    
+    pre_visited = len(visited)
+    
+    #begin at the move node
+    move_index = move["y"] * 11 + move["x"]
+    
+    #invalid start for the search
+    if move["x"] < 0 or move["y"] < 0 or move["x"] >= width or move["y"] >= height or move_index in visited: 
+        return 0
+    else:
+        found.append(move_index)
+        distances[move_index] = 1
+        
+        while len(found) > len(visited) or len(found_h) > len(visited_h):
+            if len(found) > len(visited):
+                node = found[len(visited)]
+                visited.append(node)
+            else:
+                node = found_h[len(visited_h)]
+                visited_h.append(node)
+                
+            neighbors = []
+            if node // 11 < height - 1:
+                neighbors.append(node + 11)
+            if node // 11 >0:
+                neighbors.append(node - 11)
+            if node % 11 < width - 1:
+                neighbors.append(node + 1)
+            if node % 11 > 0:
+                neighbors.append(node - 1)
+                
+            for neighbor in neighbors:
+                cost = distances[node] + costs[neighbor]
+                if cost <= max_cost:
+                    add = False
+                    if neighbor in found:
+                        if cost < distances[neighbor]:
+                            add = True
+                            found.remove(neighbor)
+                            if neighbor in visited:
+                                visited.remove(neighbor)
+                    elif neighbor in found_h:
+                        if cost < distances[neighbor]:
+                            add = True
+                            found_h.remove(neighbor)
+                            if neighbor in visited_h:
+                                visited_h.remove(neighbor)
+                    else:
+                        add = True
+
+                    if add:
+                        distances[neighbor] = cost
+                        if costs[neighbor] > 1:
+                            found_h.append(neighbor)
+                        else:
+                            found.append(neighbor)
+    
+    visited_nodes = len(visited) - pre_visited
+    sum_dist = 0
+    for node in visited:
+        sum_dist += distances[node]
+    
+    return visited_nodes * 5 - (sum_dist / visited_nodes)
+
 # Start server when `python main.py` is run
 if __name__ == "__main__":
   from server import run_server

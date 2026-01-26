@@ -20,6 +20,10 @@ from datetime import datetime, timedelta
 possible_moves = ["up", "down", "left", "right"]
 possible_events = ["wall", "body", "head", "health", "end"]
 
+def print_and_log(text):
+    print(text)
+    with open("output.log", "a") as f:
+        f.write(f"{text}\n")
 
 def get_next(origin, move):
     next_loc = origin.copy()
@@ -37,7 +41,7 @@ def get_next(origin, move):
 # and controls your Battlesnake's appearance
 # TIP: If you open your Battlesnake URL in a browser you should see this data
 def info() -> typing.Dict:
-    print("INFO")
+    print_and_log("INFO")
     return {
         "apiversion": "1",
         "author": "codemaster2b",
@@ -48,11 +52,11 @@ def info() -> typing.Dict:
 
 # start is called when your Battlesnake begins a game
 def start(gameState: typing.Dict):
-    print("GAME START")
+    print_and_log("GAME START")
 
 # end is called when your Battlesnake finishes a game
 def end(gameState: typing.Dict):
-    print("GAME OVER\n")
+    print_and_log("GAME OVER\n")
 
 # move is called on every turn and returns your next move
 def move(gameState: typing.Dict) -> typing.Dict:
@@ -65,7 +69,7 @@ def move(gameState: typing.Dict) -> typing.Dict:
     next_move = random.choice(possible_moves)
     if results.qsize() > 0:
         next_move = results.get_nowait()
-    print(f"MOVE {gameState['turn']}: {next_move}")
+    print_and_log(f"MOVE {gameState['turn']}: {next_move}")
     return {"move": next_move}
 
 def move_iterating(gameState, queue, end_time):
@@ -79,7 +83,7 @@ def move_iterating(gameState, queue, end_time):
             if value <= -1000000: #detect a hopeless situation and exit early 
                 return
             elif move in possible_moves:
-                print("iteration depth",max_depth,"best move",move)
+                print_and_log(f"iteration depth{max_depth} best move{move}")
                 queue.put(move)
 
         max_depth += 1
@@ -103,11 +107,12 @@ def minimax(end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
                 return (0, "---")
             newBoard = copy_board(myBoard)
             immediate_score = move_and_score(newBoard, move, maximizingPlayer, depth, max_depth)
-            #print(f"move={move} depth={depth} isMax={maximizingPlayer} immediate_score={immediate_score}")
+            print_and_log(f"move={move} depth={depth} isMax={maximizingPlayer} immediate_score={immediate_score}")
             if immediate_score > -500000:
                 value, m = minimax(end_time, newBoard, depth, max_depth, not maximizingPlayer, alpha, beta)
                 value = round(value * 0.99 + immediate_score,2)
-                #print(f"move={move} isMax={maximizingPlayer} value={value}")
+                value = min(max(value, -1000000),1000000)
+                print_and_log(f"move={move} isMax={maximizingPlayer} value={value}")
                 if value == bestValue:
                     bestMoves = bestMoves + [move]
                 elif value > bestValue:
@@ -123,11 +128,12 @@ def minimax(end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
                 return (0, "---")
             newBoard = copy_board(myBoard)
             immediate_score = move_and_score(newBoard, move, maximizingPlayer, depth, max_depth)
-            #print(f"move={move} depth={depth} isMax={maximizingPlayer} immediate_score={immediate_score}")
+            print_and_log(f"move={move} depth={depth} isMax={maximizingPlayer} immediate_score={immediate_score}")
             if immediate_score < 500000:
                 value, m = minimax(end_time, newBoard, depth + 1, max_depth, not maximizingPlayer, alpha, beta)
                 value = round(value * 0.99 + immediate_score,2)
-                #print(f"move={move} isMax={maximizingPlayer} value={value}")
+                value = min(max(value, -1000000),1000000)
+                print_and_log(f"move={move} isMax={maximizingPlayer} value={value}")
                 if value == bestValue:
                     bestMoves = bestMoves + [move]
                 elif value < bestValue:
@@ -160,7 +166,7 @@ def end_score(myBoard, depth):
         h = hazard_score(myBoard, snake)
         l = length_score(snake)
         p = path_score(myBoard, snake, snake["body"][0])
-        snake_score = h + l + p - f
+        snake_score = f + h + l + p
         if snake["id"] == myBoard["myId"]:
             estimate += snake_score
         else:
@@ -206,11 +212,6 @@ def move_and_score(newBoard, move, maximizingPlayer, depth, max_depth):
             if snake["health"] < 1:
                 snake_score = -1000000 #health
 
-            # eat maximizing snake if possible
-            if not maximizingPlayer:
-                if snake["body"][0] == my_snake["body"][0] and len(snake["body"]) >= len(my_snake["body"]):
-                    snake_score = 400000
-            
         if snake["id"] == newBoard["myId"]:
             estimate += snake_score
         else:
@@ -235,36 +236,47 @@ def avoid_snakes(futureHead, newBoard, currentSnake, depth):
             return -200000 #maybe dead if hit possible snake body
         
         if snake["id"] != currentSnake["id"]:
+            dx0 = abs(snake["body"][0]["x"]-futureHead["x"])
+            dy0 = abs(snake["body"][0]["y"]-futureHead["y"])
+            dx1 = abs(snake["body"][1]["x"]-currentSnake["body"][0]["x"])
+            dy1 = abs(snake["body"][1]["y"]-currentSnake["body"][0]["y"])
+
+            dx2 = abs(snake["body"][1]["x"]-futureHead["x"])
+            dy2 = abs(snake["body"][1]["y"]-futureHead["y"])
+            dx3 = abs(snake["body"][2]["x"]-currentSnake["body"][0]["x"])
+            dy3 = abs(snake["body"][2]["y"]-currentSnake["body"][0]["y"])
+            
             if (snake["health"] == 100 or newBoard["map"] != "constrictor" or snake["id"] == newBoard["myId"]) and futureHead == snake["body"][-1]:
                 return -1000000
             elif snake["id"] == newBoard["myId"] and snakeLen >= currentSnakeLen:
                 #avoid connecting with another snake head that is >= my length and has moved already    
-                if futureHead == snake["body"][0]:
+                if dx0 + dy0 == 0:
+                    return -100000
+                #avoid a stalker snake that is >= my length and has moved already    
+                elif dx2 + dy2 == 2 and dx3 + dy3 == 2:
                     return -100000
             elif snakeLen >= currentSnakeLen:
                 #avoid being within 1 of another snake head that is >= my length and has not moved yet
-                if abs(snake["body"][0]["x"]-futureHead["x"]) + abs(snake["body"][0]["y"]-futureHead["y"]) == 1:
+                if dx0 + dy0 == 1:
+                    return -100000
+                #avoid a stalker snake that is >= my length and has not moved yet    
+                elif dx0 + dy0 == 2 and dx1 + dy1 == 2:
                     return -100000
     return 0
 
 def food_score(myBoard, snake):
-    foodScore = myBoard["width"] + myBoard["height"]
+    score = myBoard["width"] + myBoard["height"]
     head = snake["body"][0]
     for food in myBoard["food"]:
-        foodScore = min(foodScore, abs(food["x"] - head["x"]) + abs(food["y"] - head["y"]))
-    return foodScore
+        score = min(score, abs(food["x"] - head["x"]) + abs(food["y"] - head["y"]))
+    return -1 * score
 
 def hazard_score(myBoard, snake):
-    if "hazards" in myBoard.keys():
-        next = snake["body"][0]
-        for hazard in myBoard["hazards"]:
-            if hazard["x"] == next["x"] and hazard["y"] == next["y"]:
-                return -115
-    return 0
+    return int(-500 / (min(snake["health"],1)))
 
 def length_score(snake):
-    return (len(snake["body"]) + int(snake["health"] / 100)) * 25
-        
+    return (len(snake["body"]) + int(snake["health"] / 100)) * 25 + snake["health"]
+
 def path_score(myBoard, current_snake, move):
     width = myBoard["width"]
     height = myBoard["height"]
@@ -293,7 +305,7 @@ def path_score(myBoard, current_snake, move):
                 visited.append(part_index)
                 distances[part_index] = 0
     
-    pre_visited = len(visited) - len(visited_h)
+    pre_visited = len(visited)
     
     #begin at the move node
     move_index = move["y"] * 11 + move["x"]
@@ -348,8 +360,13 @@ def path_score(myBoard, current_snake, move):
                             found_h.append(neighbor)
                         else:
                             found.append(neighbor)
-        
-    return (len(visited) + len(visited_h) - pre_visited) * 5
+    
+    visited_nodes = len(visited) - pre_visited
+    sum_dist = 0
+    for node in visited:
+        sum_dist += distances[node]
+    
+    return visited_nodes * 5 - (sum_dist / visited_nodes)
 
 # Start server when `python main.py` is run
 if __name__ == "__main__":
