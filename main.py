@@ -63,7 +63,7 @@ def move(gameState: typing.Dict) -> typing.Dict:
     gameState["board"]["myId"] = gameState["you"]["id"]
     gameState["board"]["map"] = gameState["game"]["map"]
     results = queue.LifoQueue()
-    end_time = datetime.now() + timedelta(seconds=0.4)
+    end_time = datetime.now() + timedelta(seconds=0.35)
     move_iterating(gameState, results, end_time)
   
     next_move = random.choice(possible_moves)
@@ -385,3 +385,4 @@ if __name__ == "__main__":
     "end": end,
     "port": port
   })
+
