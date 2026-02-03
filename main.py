@@ -181,11 +181,11 @@ def move_and_score(newBoard, move, maximizingPlayer, depth, max_depth):
         if snake["id"] == newBoard["myId"]:
             my_snake = snake
             if maximizingPlayer:
-				estimate = -1000000
+                estimate = -1000000
                 moving_snakes.append(snake)
         elif not maximizingPlayer and snake["id"] != newBoard["myId"]:
             moving_snakes.append(snake)
-			estimate = 1000000
+            estimate = 1000000
         
     for snake in moving_snakes:
         next = get_next(snake["body"][0], move)
