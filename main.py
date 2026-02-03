@@ -18,7 +18,6 @@ import numpy as np
 from datetime import datetime, timedelta
 
 possible_moves = ["up", "down", "left", "right"]
-possible_events = ["wall", "body", "head", "health", "end"]
 
 def print_and_log(text):
     print(text)
@@ -233,7 +232,7 @@ def avoid_snakes(futureHead, newBoard, currentSnake, depth):
         if depth < snakeLen - 2 and futureHead in snake["body"][depth+1:-1]:
             return -1000000 #dead if hit snake body
         elif futureHead in snake["body"][1:-1]:
-            return -200000 #maybe dead if hit possible snake body
+            return -100 #avoid hitting possible snake body
         
         if snake["id"] != currentSnake["id"]:
             dx0 = abs(snake["body"][0]["x"]-futureHead["x"])
@@ -246,22 +245,22 @@ def avoid_snakes(futureHead, newBoard, currentSnake, depth):
             dx3 = abs(snake["body"][2]["x"]-currentSnake["body"][0]["x"])
             dy3 = abs(snake["body"][2]["y"]-currentSnake["body"][0]["y"])
             
-            if (snake["health"] == 100 or newBoard["map"] != "constrictor" or snake["id"] == newBoard["myId"]) and futureHead == snake["body"][-1]:
+            if (snake["health"] == 100 or newBoard["map"] == "constrictor" or snake["id"] == newBoard["myId"]) and futureHead == snake["body"][-1]:
                 return -1000000
             elif snake["id"] == newBoard["myId"] and snakeLen >= currentSnakeLen:
                 #avoid connecting with another snake head that is >= my length and has moved already    
                 if dx0 + dy0 == 0:
-                    return -100000
+                    return -100
                 #avoid a stalker snake that is >= my length and has moved already    
                 elif dx2 + dy2 == 2 and dx3 + dy3 == 2:
-                    return -100000
+                    return -100
             elif snakeLen >= currentSnakeLen:
                 #avoid being within 1 of another snake head that is >= my length and has not moved yet
                 if dx0 + dy0 == 1:
-                    return -100000
+                    return -100
                 #avoid a stalker snake that is >= my length and has not moved yet    
                 elif dx0 + dy0 == 2 and dx1 + dy1 == 2:
-                    return -100000
+                    return -100
     return 0
 
 def food_score(myBoard, snake):
@@ -366,7 +365,8 @@ def path_score(myBoard, current_snake, move):
     for node in visited:
         sum_dist += distances[node]
     
-    return visited_nodes * 5 - (sum_dist / visited_nodes)
+    #return visited_nodes * 5 - (sum_dist / visited_nodes)
+    return -1000/(visited_nodes - (0.2 * sum_dist / visited_nodes))
 
 # Start server when `python main.py` is run
 if __name__ == "__main__":
@@ -378,11 +378,4 @@ if __name__ == "__main__":
       port = sys.argv[i + 1]
     elif sys.argv[i] == '--seed':
       random_seed = int(sys.argv[i + 1])
-  run_server({
-    "info": info,
-    "start": start,
-    "move": move,
-    "end": end,
-    "port": port
-  })
-
+  run_server({"info": info, "start": start, "move": move, "end": end, "port": port})
