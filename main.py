@@ -21,8 +21,8 @@ possible_moves = ["up", "down", "left", "right"]
 
 def print_and_log(text):
     print(text)
-    #with open("output.log", "a") as f:
-    #    f.write(f"{text}\n")
+    with open("output.log", "a") as f:
+        f.write(f"{text}\n")
 
 def get_next(origin, move):
     next_loc = origin.copy()
@@ -76,7 +76,7 @@ def move_iterating(gameState, queue, end_time):
     times = []
     times.append(datetime.now())
     while datetime.now() < end_time and max_depth < 51:
-        value, move = minimax(end_time, gameState["board"], 0, max_depth, True, -2000000, 2000000)
+        value, move = minimax(end_time, gameState["board"], 0, max_depth, True, -1000000, 1000000)
         times.append(datetime.now())    
         if datetime.now() < end_time:
             if value <= -1000000: #detect a hopeless situation and exit early 
@@ -100,7 +100,7 @@ def minimax(end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
         estimate = end_score(myBoard, depth)
         return (estimate, "---")
     if maximizingPlayer:
-        bestValue = -2000000
+        bestValue = -1000000
         for move in possible_moves:
             if datetime.now() >= end_time:
                 return (0, "---")
@@ -121,7 +121,7 @@ def minimax(end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
                 if beta < alpha:
                     break
     else:  # minimizing player
-        bestValue = 2000000
+        bestValue = 1000000
         for move in possible_moves:
             if datetime.now() >= end_time:
                 return (0, "---")
@@ -192,7 +192,10 @@ def move_and_score(newBoard, move, maximizingPlayer, depth, max_depth):
         snake_score = avoid_snakes(next, newBoard, snake, depth)
         
         if not avoid_walls(next, newBoard["width"], newBoard["height"]):
-            snake_score = -1000000 #wall
+            if maximizingPlayer:
+                snake_score = -1000000
+            else:
+                snake_score = 1000000
         else:
             snake["body"].insert(0, next)
             ateFood = False
