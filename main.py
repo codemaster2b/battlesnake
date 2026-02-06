@@ -206,7 +206,7 @@ def move_and_score(newBoard, move, maximizingPlayer, depth, max_depth):
                     break
             if snake["health"] < 100 and newBoard["map"] != "constrictor":
                 snake["body"].pop()
-                snake["health"] = snake["health"] - 1
+            snake["health"] = snake["health"] - 1
             if "hazards" in newBoard.keys():
                 for hazard in newBoard["hazards"]:
                     if hazard["x"] == next["x"] and hazard["y"] == next["y"]:
@@ -276,7 +276,7 @@ def food_score(myBoard, snake):
     return -1 * score
 
 def hazard_score(myBoard, snake):
-    return int(-500 / (min(snake["health"],1)))
+    return round(-500 / (min(snake["health"],1)),3)
 
 def length_score(snake):
     return (len(snake["body"]) + int(snake["health"] / 100)) * 25 + snake["health"]
@@ -371,7 +371,7 @@ def path_score(myBoard, current_snake, move):
         sum_dist += distances[node]
     
     #return visited_nodes * 5 - (sum_dist / visited_nodes)
-    return -1000/(visited_nodes - (0.2 * sum_dist / visited_nodes))
+    return round(-1000/(visited_nodes - (0.2 * sum_dist / visited_nodes)),3)
 
 # Start server when `python main.py` is run
 if __name__ == "__main__":
@@ -384,4 +384,3 @@ if __name__ == "__main__":
     elif sys.argv[i] == '--seed':
       random_seed = int(sys.argv[i + 1])
   run_server({"info": info, "start": start, "move": move, "end": end, "port": port})
-
