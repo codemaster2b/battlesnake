@@ -106,18 +106,18 @@ def minimax(end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
                 return (0, "---")
             newBoard = copy_board(myBoard)
             immediate_score = move_and_score(newBoard, move, maximizingPlayer, depth, max_depth)
-            print_and_log(f"move={move} depth={depth} isMax={maximizingPlayer} immediate_score={immediate_score}")
+            print_and_log(">> " * (2*depth + int(not maximizingPlayer)) + f"move={move} depth={depth} isMax={maximizingPlayer} immediate_score={immediate_score}")
             if immediate_score > -500000:
                 value, m = minimax(end_time, newBoard, depth, max_depth, not maximizingPlayer, alpha, beta)
                 value = round(value * 0.99 + immediate_score,2)
                 value = min(max(value, -1000000),1000000)
-                print_and_log(f"move={move} isMax={maximizingPlayer} value={value}")
                 if value == bestValue:
                     bestMoves = bestMoves + [move]
                 elif value > bestValue:
                     bestValue = value
                     bestMoves = [move]
                 alpha = max(alpha, bestValue)
+                print_and_log(">> " * (2*depth + int(not maximizingPlayer)) + f"move={move} depth={depth} isMax={maximizingPlayer} value={value} alpha={alpha}")
                 if beta < alpha:
                     break
     else:  # minimizing player
@@ -127,18 +127,18 @@ def minimax(end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
                 return (0, "---")
             newBoard = copy_board(myBoard)
             immediate_score = move_and_score(newBoard, move, maximizingPlayer, depth, max_depth)
-            print_and_log(f"move={move} depth={depth} isMax={maximizingPlayer} immediate_score={immediate_score}")
+            print_and_log(">> " * (2*depth + int(not maximizingPlayer)) + f"move={move} depth={depth} isMax={maximizingPlayer} immediate_score={immediate_score}")
             if immediate_score < 500000:
                 value, m = minimax(end_time, newBoard, depth + 1, max_depth, not maximizingPlayer, alpha, beta)
                 value = round(value * 0.99 + immediate_score,2)
                 value = min(max(value, -1000000),1000000)
-                print_and_log(f"move={move} isMax={maximizingPlayer} value={value}")
                 if value == bestValue:
                     bestMoves = bestMoves + [move]
                 elif value < bestValue:
                     bestValue = value
                     bestMoves = [move]
                 beta = min(beta, bestValue)
+                print_and_log(">> " * (2*depth + int(not maximizingPlayer)) + f"move={move} depth={depth} isMax={maximizingPlayer} value={value} beta={beta}")
                 if beta < alpha:
                     break
 
@@ -166,6 +166,8 @@ def end_score(myBoard, depth):
         l = length_score(snake)
         p = path_score(myBoard, snake, snake["body"][0])
         snake_score = f + h + l + p
+        maximizingPlayer = snake["id"] == myBoard["myId"]
+        print_and_log(">> " * (2*depth + int(not maximizingPlayer)) + f"depth={depth} isMax={maximizingPlayer} f={f} h={h} l={l} p={p}")
         if snake["id"] == myBoard["myId"]:
             estimate += snake_score
         else:
@@ -192,10 +194,7 @@ def move_and_score(newBoard, move, maximizingPlayer, depth, max_depth):
         snake_score = avoid_snakes(next, newBoard, snake, depth)
         
         if not avoid_walls(next, newBoard["width"], newBoard["height"]):
-            if maximizingPlayer:
-                snake_score = -1000000
-            else:
-                snake_score = 1000000
+            snake_score = -1000000
         else:
             snake["body"].insert(0, next)
             ateFood = False
@@ -206,6 +205,7 @@ def move_and_score(newBoard, move, maximizingPlayer, depth, max_depth):
                     break
             if snake["health"] < 100 and newBoard["map"] != "constrictor":
                 snake["body"].pop()
+            
             snake["health"] = snake["health"] - 1
             if "hazards" in newBoard.keys():
                 for hazard in newBoard["hazards"]:
@@ -219,7 +219,7 @@ def move_and_score(newBoard, move, maximizingPlayer, depth, max_depth):
         if snake["id"] == newBoard["myId"]:
             estimate = snake_score
         else:
-            estimate = min(estimate, snake_score)
+            estimate = min(estimate, -1*snake_score)
     return estimate
 
 def avoid_walls(futureHead, boardWidth, boardHeight):
@@ -276,7 +276,7 @@ def food_score(myBoard, snake):
     return -1 * score
 
 def hazard_score(myBoard, snake):
-    return round(-500 / (min(snake["health"],1)),3)
+    return round(-500 / (max(snake["health"],1)), 3)
 
 def length_score(snake):
     return (len(snake["body"]) + int(snake["health"] / 100)) * 25 + snake["health"]
@@ -294,40 +294,36 @@ def path_score(myBoard, current_snake, move):
             costs[hazard_index] += 14
     
     #find more runway for the snake to avoid early death
-    found = []
-    visited = []
-    found_h = []
-    visited_h = []
+    visits = [0 for i in range(121)]
     distances = [0 for i in range(121)]
     
     #snakes are already visited
+    pre_visited = 0
     for snake in myBoard["snakes"]:
         for part in snake["body"]:
             if move != current_snake["body"][0]: #works with both immediate and depth=0 cases
                 part_index = part["y"] * 11 + part["x"]
-                found.append(part_index)
-                visited.append(part_index)
+                visits[part_index] = 2
                 distances[part_index] = 0
-    
-    pre_visited = len(visited)
+                pre_visited += 1
     
     #begin at the move node
     move_index = move["y"] * 11 + move["x"]
     
     #invalid start for the search
-    if move["x"] < 0 or move["y"] < 0 or move["x"] >= width or move["y"] >= height or move_index in visited: 
+    if move["x"] < 0 or move["y"] < 0 or move["x"] >= width or move["y"] >= height or visits[move_index] > 0: 
         return 0
     else:
-        found.append(move_index)
+        visits[move_index] = 1
         distances[move_index] = 1
         
-        while len(found) > len(visited) or len(found_h) > len(visited_h):
-            if len(found) > len(visited):
-                node = found[len(visited)]
-                visited.append(node)
-            else:
-                node = found_h[len(visited_h)]
-                visited_h.append(node)
+        while 1 in visits:
+            #find next lowest number
+            sorted_idx = np.argsort(distances) #list of all indexes
+            filter_idx = list(filter(lambda i: visits[i] == 1, sorted_idx))
+            
+            node = filter_idx[0]
+            visits[node] = 2
                 
             neighbors = []
             if node // 11 < height - 1:
@@ -341,37 +337,17 @@ def path_score(myBoard, current_snake, move):
                 
             for neighbor in neighbors:
                 cost = distances[node] + costs[neighbor]
-                if cost <= max_cost:
-                    add = False
-                    if neighbor in found:
-                        if cost < distances[neighbor]:
-                            add = True
-                            found.remove(neighbor)
-                            if neighbor in visited:
-                                visited.remove(neighbor)
-                    elif neighbor in found_h:
-                        if cost < distances[neighbor]:
-                            add = True
-                            found_h.remove(neighbor)
-                            if neighbor in visited_h:
-                                visited_h.remove(neighbor)
-                    else:
-                        add = True
-
-                    if add:
-                        distances[neighbor] = cost
-                        if costs[neighbor] > 1:
-                            found_h.append(neighbor)
-                        else:
-                            found.append(neighbor)
+                if cost <= max_cost and visits[neighbor] < 2:
+                    distances[neighbor] = cost
+                    visits[neighbor] = 1
     
-    visited_nodes = len(visited) - pre_visited
-    sum_dist = 0
-    for node in visited:
-        sum_dist += distances[node]
+    #score is the sum of each discovered node (100-dist)
+    visited_nodes = - 1 * pre_visited
+    for i in range(121):
+        if visits[i] == 2:
+            visited_nodes += 1 - 0.01 * distances[i]
     
-    #return visited_nodes * 5 - (sum_dist / visited_nodes)
-    return round(-1000/(visited_nodes - (0.2 * sum_dist / visited_nodes)),3)
+    return round(-1000/visited_nodes, 3)
 
 # Start server when `python main.py` is run
 if __name__ == "__main__":
