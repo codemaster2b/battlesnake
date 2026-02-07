@@ -20,7 +20,7 @@ from datetime import datetime, timedelta
 possible_moves = ["up", "down", "left", "right"]
 
 def print_and_log(text):
-    print(text)
+    return#print(text)
     #with open("output.log", "a") as f:
     #    f.write(f"{text}\n")
 
@@ -359,4 +359,5 @@ if __name__ == "__main__":
       port = sys.argv[i + 1]
     elif sys.argv[i] == '--seed':
       random_seed = int(sys.argv[i + 1])
+
   run_server({"info": info, "start": start, "move": move, "end": end, "port": port})
