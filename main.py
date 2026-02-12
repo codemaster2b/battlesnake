@@ -306,7 +306,7 @@ def path_score(myBoard, current_snake, move):
     #snakes are already visited
     for snake in myBoard["snakes"]:
         for part in snake["body"]:
-            if move != current_snake["body"][0]: #works with both immediate and depth=0 cases
+            if part != current_snake["body"][0]: #works with both immediate and depth=0 cases
                 part_index = part["y"] * 11 + part["x"]
                 visits[part_index] = 3
                 distances[part_index] = 100
@@ -369,3 +369,4 @@ if __name__ == "__main__":
       log_file_name = sys.argv[i + 1]
 
   run_server({"info": info, "start": start, "move": move, "end": end, "port": port})
+
