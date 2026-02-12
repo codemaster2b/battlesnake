@@ -61,9 +61,10 @@ def end(gameState: typing.Dict):
     #with open(log_file_name, "a") as f:
     #    for text in logs:
     #        f.write(f"{text}\n")
-    for text in logs[i:i + 100] for i in range(0, len(logs), 100):
-        print(text)
-        time.sleep(0.21) #max 500 logs/sec when deployed
+    for block in [logs[i:i + 100] for i in range(0, len(logs), 100)]:
+        for text in block:
+            print(text)
+            time.sleep(0.21) #max 500 logs/sec when deployed
 
 # move is called on every turn and returns your next move
 def move(gameState: typing.Dict) -> typing.Dict:
