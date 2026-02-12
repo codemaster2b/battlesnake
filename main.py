@@ -18,11 +18,13 @@ import numpy as np
 from datetime import datetime, timedelta
 
 possible_moves = ["up", "down", "left", "right"]
+snake_color = "#03fcf4"
+log_file_name = "output.log"
+logs = []
 
 def print_and_log(text):
-    return#print(text)
-    #with open("output.log", "a") as f:
-    #    f.write(f"{text}\n")
+    logs.append(text)
+    return
 
 def get_next(origin, move):
     next_loc = origin.copy()
@@ -44,7 +46,7 @@ def info() -> typing.Dict:
     return {
         "apiversion": "1",
         "author": "codemaster2b",
-        "color": "#03fcf4",
+        "color": snake_color,
         "head": "pixel",
         "tail": "pixel",
     }
@@ -56,6 +58,12 @@ def start(gameState: typing.Dict):
 # end is called when your Battlesnake finishes a game
 def end(gameState: typing.Dict):
     print_and_log("GAME OVER\n")
+    #with open(log_file_name, "a") as f:
+    #    for text in logs:
+    #        f.write(f"{text}\n")
+    for text in logs[i:i + 100] for i in range(0, len(logs), 100):
+        print(text)
+        time.sleep(0.21) #max 500 logs/sec when deployed
 
 # move is called on every turn and returns your next move
 def move(gameState: typing.Dict) -> typing.Dict:
@@ -75,7 +83,7 @@ def move_iterating(gameState, queue, end_time):
     max_depth = 1
     times = []
     times.append(datetime.now())
-    while datetime.now() < end_time and max_depth < 51:
+    while datetime.now() < end_time and max_depth < 3:
         value, move = minimax(end_time, gameState["board"], 0, max_depth, True, -1000000, 1000000)
         times.append(datetime.now())    
         if datetime.now() < end_time:
@@ -102,13 +110,13 @@ def minimax(end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
     if maximizingPlayer:
         bestValue = -1000000
         for move in possible_moves:
-            if datetime.now() >= end_time:
-                return (0, "---")
             newBoard = copy_board(myBoard)
             immediate_score = move_and_score(newBoard, move, maximizingPlayer, depth, max_depth)
             print_and_log(">> " * (2*depth + int(not maximizingPlayer)) + f"move={move} depth={depth} isMax={maximizingPlayer} immediate_score={immediate_score}")
             if immediate_score > -500000:
                 value, m = minimax(end_time, newBoard, depth, max_depth, not maximizingPlayer, alpha, beta)
+                if datetime.now() >= end_time:
+                    return (0, "---")
                 value = round(value * 0.99 + immediate_score,2)
                 value = min(max(value, -1000000),1000000)
                 if value == bestValue:
@@ -123,13 +131,13 @@ def minimax(end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
     else:  # minimizing player
         bestValue = 1000000
         for move in possible_moves:
-            if datetime.now() >= end_time:
-                return (0, "---")
             newBoard = copy_board(myBoard)
             immediate_score = move_and_score(newBoard, move, maximizingPlayer, depth, max_depth)
             print_and_log(">> " * (2*depth + int(not maximizingPlayer)) + f"move={move} depth={depth} isMax={maximizingPlayer} immediate_score={immediate_score}")
             if immediate_score < 500000:
                 value, m = minimax(end_time, newBoard, depth + 1, max_depth, not maximizingPlayer, alpha, beta)
+                if datetime.now() >= end_time:
+                    return (0, "---")
                 value = round(value * 0.99 + immediate_score,2)
                 value = min(max(value, -1000000),1000000)
                 if value == bestValue:
@@ -148,6 +156,7 @@ def minimax(end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
         return bestValue, "---"
 
 def copy_board(myBoard):
+  return copy.deepcopy(myBoard)
   newBoard = myBoard.copy()
   newBoard["food"] = myBoard["food"].copy()
   newBoard["hazards"] = myBoard["hazards"].copy()
@@ -304,7 +313,7 @@ def path_score(myBoard, current_snake, move):
             if move != current_snake["body"][0]: #works with both immediate and depth=0 cases
                 part_index = part["y"] * 11 + part["x"]
                 visits[part_index] = 2
-                distances[part_index] = 0
+                distances[part_index] = 100
                 pre_visited += 1
     
     #begin at the move node
@@ -359,5 +368,8 @@ if __name__ == "__main__":
       port = sys.argv[i + 1]
     elif sys.argv[i] == '--seed':
       random_seed = int(sys.argv[i + 1])
-
+    elif sys.argv[i] == '--color':
+      snake_color = sys.argv[i + 1]
+    elif sys.argv[i] == '--log':
+      log_file_name = sys.argv[i + 1]
   run_server({"info": info, "start": start, "move": move, "end": end, "port": port})
