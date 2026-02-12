@@ -302,14 +302,12 @@ def path_score(myBoard, current_snake, move):
     distances = [0 for i in range(121)]
     
     #snakes are already visited
-    pre_visited = 0
     for snake in myBoard["snakes"]:
         for part in snake["body"]:
             if move != current_snake["body"][0]: #works with both immediate and depth=0 cases
                 part_index = part["y"] * 11 + part["x"]
-                visits[part_index] = 2
+                visits[part_index] = 3
                 distances[part_index] = 100
-                pre_visited += 1
     
     #begin at the move node
     move_index = move["y"] * 11 + move["x"]
@@ -341,12 +339,12 @@ def path_score(myBoard, current_snake, move):
                 
             for neighbor in neighbors:
                 cost = distances[node] + costs[neighbor]
-                if cost <= max_cost and visits[neighbor] < 2:
+                if cost <= max_cost and visits[neighbor] < 1:
                     distances[neighbor] = cost
                     visits[neighbor] = 1
     
     #score is the sum of each discovered node (100-dist)
-    visited_nodes = - 1 * pre_visited
+    visited_nodes = 0
     for i in range(121):
         if visits[i] == 2:
             visited_nodes += 1 - 0.01 * distances[i]
@@ -367,4 +365,5 @@ if __name__ == "__main__":
       snake_color = sys.argv[i + 1]
     elif sys.argv[i] == '--log':
       log_file_name = sys.argv[i + 1]
+
   run_server({"info": info, "start": start, "move": move, "end": end, "port": port})
