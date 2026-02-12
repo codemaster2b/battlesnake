@@ -157,7 +157,6 @@ def minimax(end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
         return bestValue, "---"
 
 def copy_board(myBoard):
-  return copy.deepcopy(myBoard)
   newBoard = myBoard.copy()
   newBoard["food"] = myBoard["food"].copy()
   newBoard["hazards"] = myBoard["hazards"].copy()
@@ -185,51 +184,41 @@ def end_score(myBoard, depth):
     return estimate
 
 def move_and_score(newBoard, move, maximizingPlayer, depth, max_depth):
-    estimate = 0
+    estimate = 1000000
+    if maximizingPlayer:
+        estimate = -1000000
 
-    my_snake = {}
-    moving_snakes = []
     for snake in newBoard["snakes"]:
-        if snake["id"] == newBoard["myId"]:
-            my_snake = snake
-            if maximizingPlayer:
-                estimate = -1000000
-                moving_snakes.append(snake)
-        elif not maximizingPlayer and snake["id"] != newBoard["myId"]:
-            moving_snakes.append(snake)
-            estimate = 1000000
-        
-    for snake in moving_snakes:
-        next = get_next(snake["body"][0], move)
-        snake_score = avoid_snakes(next, newBoard, snake, depth)
-        
-        if not avoid_walls(next, newBoard["width"], newBoard["height"]):
-            snake_score = -1000000
-        else:
-            snake["body"].insert(0, next)
-            ateFood = False
-            for food in newBoard["food"]:
-                if food["x"] == next["x"] and food["y"] == next["y"]:
-                    ateFood = True
-                    newBoard["food"].remove(food)
-                    break
-            if snake["health"] < 100 and newBoard["map"] != "constrictor":
-                snake["body"].pop()
-            
-            snake["health"] = snake["health"] - 1
-            if "hazards" in newBoard.keys():
-                for hazard in newBoard["hazards"]:
-                    if hazard["x"] == next["x"] and hazard["y"] == next["y"]:
-                        snake["health"] = snake["health"] - 14
-            if ateFood:
-                snake["health"] = 100
-            if snake["health"] < 1:
-                snake_score = -1000000 #health
+        if (snake["id"] == newBoard["myId"] and maximizingPlayer) or (snake["id"] != newBoard["myId"] and not maximizingPlayer):
+            next = get_next(snake["body"][0], move)
+            snake_score = avoid_snakes(next, newBoard, snake, depth)
+            if not avoid_walls(next, newBoard["width"], newBoard["height"]):
+                snake_score = -1000000
+            else:
+                snake["body"].insert(0, next)
+                ateFood = False
+                for food in newBoard["food"]:
+                    if food["x"] == next["x"] and food["y"] == next["y"]:
+                        ateFood = True
+                        newBoard["food"].remove(food)
+                        break
+                if snake["health"] < 100 and newBoard["map"] != "constrictor":
+                    snake["body"].pop()
 
-        if snake["id"] == newBoard["myId"]:
-            estimate = snake_score
-        else:
-            estimate = min(estimate, -1*snake_score)
+                snake["health"] = snake["health"] - 1
+                if "hazards" in newBoard.keys():
+                    for hazard in newBoard["hazards"]:
+                        if hazard["x"] == next["x"] and hazard["y"] == next["y"]:
+                            snake["health"] = snake["health"] - 14
+                if ateFood:
+                    snake["health"] = 100
+                if snake["health"] < 1:
+                    snake_score = -1000000 #health
+
+            if snake["id"] == newBoard["myId"]:
+                estimate = snake_score
+            else:
+                estimate = min(estimate, -1*snake_score)
     return estimate
 
 def avoid_walls(futureHead, boardWidth, boardHeight):
@@ -242,12 +231,17 @@ def avoid_walls(futureHead, boardWidth, boardHeight):
 
 def avoid_snakes(futureHead, newBoard, currentSnake, depth):
     currentSnakeLen = len(currentSnake["body"])
+    value = 0
     for snake in newBoard["snakes"]:
         snakeLen = len(snake["body"])
+        #if snake is currentSnake, then I chose this path
         if depth < snakeLen - 2 and futureHead in snake["body"][depth+1:-1]:
-            return -1000000 #dead if hit snake body
+            value = min(value, -1000000) #dead if hit snake body
+        elif futureHead in currentSnake["body"][1:-1]:
+            value = min(value, -1000000) #dead if hit my snake body
         elif futureHead in snake["body"][1:-1]:
-            return -100 #avoid hitting possible snake body
+            #i should not return with just -100 if it could be worse!
+            value = min(value, -100) #avoid hitting possible snake body
         
         if snake["id"] != currentSnake["id"]:
             dx0 = abs(snake["body"][0]["x"]-futureHead["x"])
@@ -261,22 +255,22 @@ def avoid_snakes(futureHead, newBoard, currentSnake, depth):
             dy3 = abs(snake["body"][2]["y"]-currentSnake["body"][0]["y"])
             
             if (snake["health"] == 100 or newBoard["map"] == "constrictor" or snake["id"] == newBoard["myId"]) and futureHead == snake["body"][-1]:
-                return -1000000
+                value = min(value, -1000000)
             elif snake["id"] == newBoard["myId"] and snakeLen >= currentSnakeLen:
                 #avoid connecting with another snake head that is >= my length and has moved already    
                 if dx0 + dy0 == 0:
-                    return -100
+                    value = min(value, -100)
                 #avoid a stalker snake that is >= my length and has moved already    
                 elif dx2 + dy2 == 2 and dx3 + dy3 == 2:
-                    return -100
+                    value = min(value, -100)
             elif snakeLen >= currentSnakeLen:
                 #avoid being within 1 of another snake head that is >= my length and has not moved yet
                 if dx0 + dy0 == 1:
-                    return -100
+                    value = min(value, -100)
                 #avoid a stalker snake that is >= my length and has not moved yet    
                 elif dx0 + dy0 == 2 and dx1 + dy1 == 2:
-                    return -100
-    return 0
+                    value = min(value, -100)
+    return value
 
 def food_score(myBoard, snake):
     score = myBoard["width"] + myBoard["height"]
