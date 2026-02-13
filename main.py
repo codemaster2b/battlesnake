@@ -64,6 +64,7 @@ def end(gameState: typing.Dict):
     for block in [logs[i:i + 100] for i in range(0, len(logs), 100)]:
         print(" ".join(block))
         time.sleep(0.1) #max 500 logs/sec
+    logs.clear()
 
 # move is called on every turn and returns your next move
 def move(gameState: typing.Dict) -> typing.Dict:
@@ -355,18 +356,17 @@ def path_score(myBoard, current_snake, move):
 
 # Start server when `python main.py` is run
 if __name__ == "__main__":
-  from server import run_server
+    from server import run_server
 
-  port = "8000"
-  for i in range(len(sys.argv) - 1):
-    if sys.argv[i] == '--port':
-      port = sys.argv[i + 1]
-    elif sys.argv[i] == '--seed':
-      random_seed = int(sys.argv[i + 1])
-    elif sys.argv[i] == '--color':
-      snake_color = sys.argv[i + 1]
-    elif sys.argv[i] == '--log':
-      log_file_name = sys.argv[i + 1]
+    port = "8000"
+    for i in range(len(sys.argv) - 1):
+        if sys.argv[i] == '--port':
+            port = sys.argv[i + 1]
+        elif sys.argv[i] == '--seed':
+            random_seed = int(sys.argv[i + 1])
+        elif sys.argv[i] == '--color':
+            snake_color = sys.argv[i + 1]
+        elif sys.argv[i] == '--log':
+            log_file_name = sys.argv[i + 1]
 
-  run_server({"info": info, "start": start, "move": move, "end": end, "port": port})
-
+    run_server({"info": info, "start": start, "move": move, "end": end, "port": port})
