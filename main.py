@@ -16,6 +16,10 @@ import threading
 import queue
 import numpy as np
 from datetime import datetime, timedelta
+import cProfile, pstats, io
+from pstats import SortKey
+UseProfiling = False
+pr = cProfile.Profile()
 
 possible_moves = ["up", "down", "left", "right"]
 snake_color = "#03fcf4"
@@ -54,16 +58,26 @@ def info() -> typing.Dict:
 # start is called when your Battlesnake begins a game
 def start(gameState: typing.Dict):
     print_and_log("GAME START\n")
+    if UseProfiling:
+        pr.enable()
 
 # end is called when your Battlesnake finishes a game
 def end(gameState: typing.Dict):
     print_and_log("GAME OVER\n")
+    if UseProfiling:
+        pr.disable()
+        s = io.StringIO()
+        sortby = SortKey.CUMULATIVE
+        ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+        ps.print_stats()
+        print_and_log(s.getvalue())
+
     #with open(log_file_name, "a") as f:
     #    for text in logs:
     #        f.write(f"{text}")
     for block in [logs[i:i + 100] for i in range(0, len(logs), 100)]:
         print(" ".join(block))
-        time.sleep(0.1) #max 500 logs/sec
+        time.sleep(0.2) #max 500 logs/sec
     logs.clear()
 
 # move is called on every turn and returns your next move
@@ -78,13 +92,14 @@ def move(gameState: typing.Dict) -> typing.Dict:
     if results.qsize() > 0:
         next_move = results.get_nowait()
     print_and_log(f"MOVE {gameState['turn']}: {next_move}\n")
+
     return {"move": next_move}
 
 def move_iterating(gameState, queue, end_time):
     max_depth = 1
     times = []
     times.append(datetime.now())
-    while datetime.now() < end_time and max_depth < 3:
+    while datetime.now() < end_time and max_depth < 51:
         value, move = minimax(end_time, gameState["board"], 0, max_depth, True, -1000000, 1000000)
         times.append(datetime.now())    
         if datetime.now() < end_time:
@@ -324,23 +339,34 @@ def path_score(myBoard, current_snake, move):
         
         while 1 in visits:
             #find next lowest number
-            sorted_idx = np.argsort(distances) #list of all indexes
-            filter_idx = list(filter(lambda i: visits[i] == 1, sorted_idx))
+            node = -1
+            for i in range(121):
+                if visits[i] == 1:
+                    if node < 0 or distances[i] < distances[node]:
+                        node = i
             
-            node = filter_idx[0]
             visits[node] = 2
                 
-            neighbors = []
             if node // 11 < height - 1:
-                neighbors.append(node + 11)
+                neighbor = node + 11
+                cost = distances[node] + costs[neighbor]
+                if cost <= max_cost and visits[neighbor] < 1:
+                    distances[neighbor] = cost
+                    visits[neighbor] = 1
             if node // 11 >0:
-                neighbors.append(node - 11)
+                neighbor = node - 11
+                cost = distances[node] + costs[neighbor]
+                if cost <= max_cost and visits[neighbor] < 1:
+                    distances[neighbor] = cost
+                    visits[neighbor] = 1
             if node % 11 < width - 1:
-                neighbors.append(node + 1)
+                neighbor = node + 1
+                cost = distances[node] + costs[neighbor]
+                if cost <= max_cost and visits[neighbor] < 1:
+                    distances[neighbor] = cost
+                    visits[neighbor] = 1
             if node % 11 > 0:
-                neighbors.append(node - 1)
-                
-            for neighbor in neighbors:
+                neighbor = node - 1
                 cost = distances[node] + costs[neighbor]
                 if cost <= max_cost and visits[neighbor] < 1:
                     distances[neighbor] = cost
