@@ -27,7 +27,7 @@ log_file_name = "output.log"
 logs = []
 
 def print_and_log(text):
-    logs.append(text)
+    #logs.append(text)
     return
 
 def get_next(origin, move):
@@ -396,3 +396,4 @@ if __name__ == "__main__":
             log_file_name = sys.argv[i + 1]
 
     run_server({"info": info, "start": start, "move": move, "end": end, "port": port})
+
