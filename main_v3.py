@@ -18,7 +18,9 @@ import numpy as np
 from datetime import datetime, timedelta
 import cProfile, pstats, io
 from pstats import SortKey
-UseProfiling = False
+
+use_profiling = False
+deployed = False
 pr = cProfile.Profile()
 
 possible_moves = ["up", "down", "left", "right"]
@@ -27,7 +29,8 @@ log_file_name = "output.log"
 logs = []
 
 def print_and_log(text):
-    logs.append(text)
+    if not deployed:
+        logs.append(text)
     return
 
 def get_next(origin, move):
@@ -58,13 +61,13 @@ def info() -> typing.Dict:
 # start is called when your Battlesnake begins a game
 def start(gameState: typing.Dict):
     print_and_log("GAME START\n")
-    if UseProfiling:
+    if use_profiling:
         pr.enable()
 
 # end is called when your Battlesnake finishes a game
 def end(gameState: typing.Dict):
     print_and_log("GAME OVER\n")
-    if UseProfiling:
+    if use_profiling:
         pr.disable()
         s = io.StringIO()
         sortby = SortKey.CUMULATIVE
@@ -72,12 +75,14 @@ def end(gameState: typing.Dict):
         ps.print_stats()
         print_and_log(s.getvalue())
 
-    with open(log_file_name, "a") as f:
-        for text in logs:
-            f.write(f"{text}")
+    if not deployed:
+        with open(log_file_name, "a") as f:
+            for text in logs:
+                f.write(f"{text}")
+
     for block in [logs[i:i + 100] for i in range(0, len(logs), 100)]:
         print(" ".join(block))
-        time.sleep(0.1) #max 500 logs/sec
+        #time.sleep(0.1) #max 500 logs/sec
     logs.clear()
 
 # move is called on every turn and returns your next move
@@ -220,16 +225,18 @@ def move_and_score(newBoard, move, maximizingPlayer, depth, max_depth):
                     if food["x"] == next["x"] and food["y"] == next["y"]:
                         ateFood = True
                         newBoard["food"].remove(food)
+                        snake_score += 2*(max_depth - depth) #prioritize an apple earlier
                         break
                 if snake["health"] < 100 and newBoard["map"] != "constrictor":
                     snake["body"].pop()
-
+                
+                # can a snake eat food after it loses too much health?
                 snake["health"] = snake["health"] - 1
                 if "hazards" in newBoard.keys():
                     for hazard in newBoard["hazards"]:
                         if hazard["x"] == next["x"] and hazard["y"] == next["y"]:
                             snake["health"] = snake["health"] - 14
-                if ateFood and snake["health"] > 0:
+                if ateFood:
                     snake["health"] = 100
                 if snake["health"] < 1:
                     snake_score = -1000000 #health
