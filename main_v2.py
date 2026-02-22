@@ -31,6 +31,8 @@ SCORE_MIN = -G_END_SCORE - G_END_SPAN
 SCORE_GAME_END = G_END_SCORE
 SCORE_NEG_GAME_END = -G_END_SCORE
 
+snake_color = "#03fcf4"
+
 # info is called when you create your Battlesnake on play.battlesnake.com
 # and controls your Battlesnake's appearance
 # TIP: If you open your Battlesnake URL in a browser you should see this data
@@ -39,7 +41,7 @@ def info() -> typing.Dict:
   return {
     "apiversion": "1",
     "author": "codemaster2b",
-    "color": "#03fcf4",
+    "color": snake_color,
     "head": "pixel",
     "tail": "pixel",
   }
@@ -448,10 +450,6 @@ if __name__ == "__main__":
       port = sys.argv[i + 1]
     elif sys.argv[i] == '--seed':
       random_seed = int(sys.argv[i + 1])
-  run_server({
-    "info": info,
-    "start": start,
-    "move": move,
-    "end": end,
-    "port": port
-  })
+    elif sys.argv[i] == '--color':
+      snake_color = sys.argv[i + 1]
+  run_server({"info": info, "start": start, "move": move, "end": end, "port": port})
