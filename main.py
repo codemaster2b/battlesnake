@@ -77,7 +77,7 @@ def end(gameState: typing.Dict):
     #        f.write(f"{text}")
     for block in [logs[i:i + 100] for i in range(0, len(logs), 100)]:
         print(" ".join(block))
-        time.sleep(0.2) #max 500 logs/sec
+        time.sleep(0.1) #max 500 logs/sec
     logs.clear()
 
 # move is called on every turn and returns your next move
@@ -207,10 +207,11 @@ def move_and_score(newBoard, move, maximizingPlayer, depth, max_depth):
         estimate = -1000000
 
     for snake in newBoard["snakes"]:
-        if (snake["id"] == newBoard["myId"] and maximizingPlayer) or (snake["id"] != newBoard["myId"] and not maximizingPlayer):
+        if snake["health"] > 0 and ((snake["id"] == newBoard["myId"] and maximizingPlayer) or (snake["id"] != newBoard["myId"] and not maximizingPlayer)):
             next = get_next(snake["body"][0], move)
             snake_score = avoid_snakes(next, newBoard, snake, depth)
             if not avoid_walls(next, newBoard["width"], newBoard["height"]):
+                snake["health"] = 0
                 snake_score = -1000000
             else:
                 snake["body"].insert(0, next)
@@ -228,7 +229,7 @@ def move_and_score(newBoard, move, maximizingPlayer, depth, max_depth):
                     for hazard in newBoard["hazards"]:
                         if hazard["x"] == next["x"] and hazard["y"] == next["y"]:
                             snake["health"] = snake["health"] - 14
-                if ateFood:
+                if ateFood and snake["health"] > 0:
                     snake["health"] = 100
                 if snake["health"] < 1:
                     snake_score = -1000000 #health
@@ -396,4 +397,3 @@ if __name__ == "__main__":
             log_file_name = sys.argv[i + 1]
 
     run_server({"info": info, "start": start, "move": move, "end": end, "port": port})
-
