@@ -285,10 +285,10 @@ def avoid_snakes(futureHead, newBoard, currentSnake, depth):
             elif snake["id"] == newBoard["myId"] and snakeLen >= currentSnakeLen:
                 #avoid connecting with another snake head that is >= my length and has moved already    
                 if dx0 + dy0 == 0:
-                    value = min(value, -100)
-                #avoid a stalker snake that is >= my length and has moved already    
+                    value = min(value, -300)
+                #avoid a stalker snake that is >= my length and has moved already
                 elif dx2 + dy2 == 2 and dx3 + dy3 == 2:
-                    value = min(value, -100)
+                    value = min(value, -300)
             elif snakeLen >= currentSnakeLen:
                 #avoid being within 1 of another snake head that is >= my length and has not moved yet
                 if dx0 + dy0 == 1:
