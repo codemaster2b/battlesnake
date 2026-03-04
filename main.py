@@ -26,11 +26,11 @@ pr = cProfile.Profile()
 possible_moves = ["up", "down", "left", "right"]
 snake_color = "#03fcf4"
 log_file_name = "output.log"
-logs = []
+logs = {}
 
-def print_and_log(text, always=False):
+def print_and_log(id, text, always=False):
     if always or not deployed:
-        logs.append(text)
+        logs[id].append(text)
     return
 
 def get_next(origin, move):
@@ -49,7 +49,6 @@ def get_next(origin, move):
 # and controls your Battlesnake's appearance
 # TIP: If you open your Battlesnake URL in a browser you should see this data
 def info() -> typing.Dict:
-    print_and_log("INFO\n")
     return {
         "apiversion": "1",
         "author": "codemaster2b",
@@ -60,31 +59,31 @@ def info() -> typing.Dict:
 
 # start is called when your Battlesnake begins a game
 def start(gameState: typing.Dict):
-    print_and_log("GAME START\n", True)
-    print_and_log(str(gameState), True)
+    print_and_log(gameState["game"]["id"], "GAME START\n", True)
+    print_and_log(gameState["game"]["id"], str(gameState), True)
     if use_profiling:
         pr.enable()
 
 # end is called when your Battlesnake finishes a game
 def end(gameState: typing.Dict):
-    print_and_log("GAME OVER\n", True)
+    game_id = gameState["game"]["id"]
+    print_and_log(game_id, "GAME OVER\n", True)
     if use_profiling:
         pr.disable()
         s = io.StringIO()
         sortby = SortKey.CUMULATIVE
         ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
         ps.print_stats()
-        print_and_log(s.getvalue())
+        print_and_log(gameState["game"]["id"], s.getvalue())
 
     if not deployed:
         with open(log_file_name, "a") as f:
-            for text in logs:
+            for text in logs[game_id]:
                 f.write(f"{text}")
 
-    for block in [logs[i:i + 100] for i in range(0, len(logs), 100)]:
-        print(" ".join(block))
-        #time.sleep(0.1) #max 500 logs/sec
-    logs.clear()
+    for text in logs[game_id]:
+        print(text)
+    logs.pop(game_id, None)
 
 # move is called on every turn and returns your next move
 def move(gameState: typing.Dict) -> typing.Dict:
@@ -98,7 +97,7 @@ def move(gameState: typing.Dict) -> typing.Dict:
     next_move = random.choice(possible_moves)
     if results.qsize() > 0:
         next_move = results.get_nowait()
-    print_and_log(f"MOVE {gameState['turn']}: {next_move} {round((datetime.now()-start_time).total_seconds(),3)}s\n", True)
+    print_and_log(gameState["game"]["id"], f"MOVE {gameState['turn']}: {next_move} {round((datetime.now()-start_time).total_seconds(),3)}s\n", True)
 
     return {"move": next_move}
 
@@ -107,13 +106,13 @@ def move_iterating(gameState, queue, end_time):
     times = []
     times.append(datetime.now())
     while datetime.now() < end_time and max_depth < 51:
-        value, move = minimax(end_time, gameState["board"], 0, max_depth, True, -1000000, 1000000)
+        value, move = minimax(gameState["game"]["id"], end_time, gameState["board"], 0, max_depth, True, -1000000, 1000000)
         times.append(datetime.now())    
         if datetime.now() < end_time:
             if value <= -1000000: #detect a hopeless situation and exit early 
                 return
             elif move in possible_moves:
-                print_and_log(f"d={max_depth} best={move}\n")
+                print_and_log(gameState["game"]["id"], f"d={max_depth} best={move}\n")
                 queue.put(move)
 
         max_depth += 1
@@ -121,23 +120,23 @@ def move_iterating(gameState, queue, end_time):
             return
     return
 
-def minimax(end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
+def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
     if datetime.now() >= end_time:
         return (0, "---")
     bestMoves = []
     bestValue = 0
 
     if depth == max_depth:
-        estimate = end_score(myBoard, depth)
+        estimate = end_score(game_id, myBoard, depth)
         return (estimate, "---")
     if maximizingPlayer:
         bestValue = -1000000
         for move in possible_moves:
             newBoard = copy_board(myBoard)
-            print_and_log(f"<< d={depth} max={maximizingPlayer} {move}: ")
+            print_and_log(game_id, f"<< d={depth} max={maximizingPlayer} {move}: ")
             immediate_score = move_and_score(newBoard, move, maximizingPlayer, depth, max_depth)
             if immediate_score > -500000:
-                value, m = minimax(end_time, newBoard, depth, max_depth, not maximizingPlayer, alpha, beta)
+                value, m = minimax(game_id, end_time, newBoard, depth, max_depth, not maximizingPlayer, alpha, beta)
                 if datetime.now() >= end_time:
                     return (0, "---")
                 value = round(value * 0.99 + immediate_score,2)
@@ -148,19 +147,19 @@ def minimax(end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
                     bestValue = value
                     bestMoves = [move]
                 alpha = max(alpha, bestValue)
-                print_and_log(f"final d={depth} max={maximizingPlayer} {move}: value={value} alpha={alpha} >>\n")
+                print_and_log(game_id, f"final d={depth} max={maximizingPlayer} {move}: value={value} alpha={alpha} >>\n")
                 if beta < alpha:
                     break
             else:
-                print_and_log(f"final d={depth} max={maximizingPlayer} {move}: immediate={immediate_score} >>\n")
+                print_and_log(game_id, f"final d={depth} max={maximizingPlayer} {move}: immediate={immediate_score} >>\n")
     else:  # minimizing player
         bestValue = 1000000
         for move in possible_moves:
             newBoard = copy_board(myBoard)
-            print_and_log(f"<< d={depth} max={maximizingPlayer} {move}: ")
+            print_and_log(game_id, f"<< d={depth} max={maximizingPlayer} {move}: ")
             immediate_score = move_and_score(newBoard, move, maximizingPlayer, depth, max_depth)
             if immediate_score < 500000:
-                value, m = minimax(end_time, newBoard, depth + 1, max_depth, not maximizingPlayer, alpha, beta)
+                value, m = minimax(game_id, end_time, newBoard, depth + 1, max_depth, not maximizingPlayer, alpha, beta)
                 if datetime.now() >= end_time:
                     return (0, "---")
                 value = round(value * 0.99 + immediate_score,2)
@@ -171,11 +170,11 @@ def minimax(end_time, myBoard, depth, max_depth, maximizingPlayer, alpha, beta):
                     bestValue = value
                     bestMoves = [move]
                 beta = min(beta, bestValue)
-                print_and_log(f"final d={depth} max={maximizingPlayer} {move}: value={value} beta={beta} >>\n")
+                print_and_log(game_id, f"final d={depth} max={maximizingPlayer} {move}: value={value} beta={beta} >>\n")
                 if beta < alpha:
                     break
             else:
-                print_and_log(f"final d={depth} max={maximizingPlayer} {move}: immediate={immediate_score} >>\n")
+                print_and_log(game_id, f"final d={depth} max={maximizingPlayer} {move}: immediate={immediate_score} >>\n")
     if len(bestMoves) > 0:
         return bestValue, random.choice(bestMoves)
     else:
@@ -192,7 +191,7 @@ def copy_board(myBoard):
     newBoard["snakes"].append(newSnake)
   return newBoard
   
-def end_score(myBoard, depth):
+def end_score(game_id, myBoard, depth):
     estimate = 0
     for snake in myBoard["snakes"]:
         f = food_score(myBoard, snake)
@@ -201,7 +200,7 @@ def end_score(myBoard, depth):
         p = path_score(myBoard, snake, snake["body"][0])
         snake_score = f + h + l + p
         maximizingPlayer = snake["id"] == myBoard["myId"]
-        print_and_log(f"[max={maximizingPlayer} f={f} h={h} l={l} p={p}] ")
+        print_and_log(game_id, f"[max={maximizingPlayer} f={f} h={h} l={l} p={p}] ")
         if snake["id"] == myBoard["myId"]:
             estimate += snake_score
         else:
