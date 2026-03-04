@@ -83,8 +83,7 @@ def end(gameState: typing.Dict):
             for text in logs[game_id]:
                 f.write(f"{text}")
 
-    for text in logs[game_id]:
-        print(text)
+    print(" ".join(logs[game_id]))
     logs.pop(game_id, None)
 
 # move is called on every turn and returns your next move
