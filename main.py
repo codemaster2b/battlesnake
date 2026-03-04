@@ -28,8 +28,8 @@ snake_color = "#03fcf4"
 log_file_name = "output.log"
 logs = []
 
-def print_and_log(text):
-    if not deployed:
+def print_and_log(text, always=False):
+    if always or not deployed:
         logs.append(text)
     return
 
@@ -60,13 +60,13 @@ def info() -> typing.Dict:
 
 # start is called when your Battlesnake begins a game
 def start(gameState: typing.Dict):
-    print_and_log("GAME START\n")
+    print_and_log("GAME START\n", True)
     if use_profiling:
         pr.enable()
 
 # end is called when your Battlesnake finishes a game
 def end(gameState: typing.Dict):
-    print_and_log("GAME OVER\n")
+    print_and_log("GAME OVER\n", True)
     if use_profiling:
         pr.disable()
         s = io.StringIO()
@@ -96,7 +96,7 @@ def move(gameState: typing.Dict) -> typing.Dict:
     next_move = random.choice(possible_moves)
     if results.qsize() > 0:
         next_move = results.get_nowait()
-    print_and_log(f"MOVE {gameState['turn']}: {next_move}\n")
+    print_and_log(f"MOVE {gameState['turn']}: {next_move}\n", True)
 
     return {"move": next_move}
 
