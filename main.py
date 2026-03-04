@@ -29,6 +29,8 @@ log_file_name = "output.log"
 logs = {}
 
 def print_and_log(id, text, always=False):
+    if id not in logs:
+        logs[id] = []
     if always or not deployed:
         logs[id].append(text)
     return
@@ -60,7 +62,6 @@ def info() -> typing.Dict:
 # start is called when your Battlesnake begins a game
 def start(gameState: typing.Dict):
     game_id = gameState["game"]["id"]
-    logs[game_id] = []
     print_and_log(game_id, "GAME START\n", True)
     print_and_log(game_id, str(gameState), True)
     if use_profiling:
