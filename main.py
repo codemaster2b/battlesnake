@@ -87,16 +87,17 @@ def end(gameState: typing.Dict):
 
 # move is called on every turn and returns your next move
 def move(gameState: typing.Dict) -> typing.Dict:
+    start_time = datetime.now()
     gameState["board"]["myId"] = gameState["you"]["id"]
     gameState["board"]["map"] = gameState["game"]["map"]
     results = queue.LifoQueue()
-    end_time = datetime.now() + timedelta(seconds=0.35)
+    end_time = start_time + timedelta(seconds=0.35)
     move_iterating(gameState, results, end_time)
   
     next_move = random.choice(possible_moves)
     if results.qsize() > 0:
         next_move = results.get_nowait()
-    print_and_log(f"MOVE {gameState['turn']}: {next_move}\n", True)
+    print_and_log(f"MOVE {gameState['turn']}: {next_move} {round((datetime.now()-start_time).total_seconds(),3)}s\n", True)
 
     return {"move": next_move}
 
