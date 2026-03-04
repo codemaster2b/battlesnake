@@ -59,8 +59,10 @@ def info() -> typing.Dict:
 
 # start is called when your Battlesnake begins a game
 def start(gameState: typing.Dict):
-    print_and_log(gameState["game"]["id"], "GAME START\n", True)
-    print_and_log(gameState["game"]["id"], str(gameState), True)
+    game_id = gameState["game"]["id"]
+    logs[game_id] = []
+    print_and_log(game_id, "GAME START\n", True)
+    print_and_log(game_id, str(gameState), True)
     if use_profiling:
         pr.enable()
 
