@@ -63,7 +63,6 @@ def info() -> typing.Dict:
 def start(gameState: typing.Dict):
     game_id = gameState["game"]["id"]
     print_and_log(game_id, "GAME START\n", True)
-    print_and_log(game_id, str(gameState), True)
     if use_profiling:
         pr.enable()
 
@@ -90,6 +89,7 @@ def end(gameState: typing.Dict):
 # move is called on every turn and returns your next move
 def move(gameState: typing.Dict) -> typing.Dict:
     start_time = datetime.now()
+    print_and_log(game_id, str(gameState), True)
     gameState["board"]["myId"] = gameState["you"]["id"]
     gameState["board"]["map"] = gameState["game"]["map"]
     results = queue.LifoQueue()
@@ -407,3 +407,4 @@ if __name__ == "__main__":
             log_file_name = sys.argv[i + 1]
 
     run_server({"info": info, "start": start, "move": move, "end": end, "port": port})
+
