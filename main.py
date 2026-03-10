@@ -247,7 +247,7 @@ def move_and_score(newBoard, set, maximizingPlayer, depth, max_depth):
     snake_moves = {}
     snake_scores = {}
     snake_heads = {}
-    for i in range(len(set)/2):
+    for i in range(int(len(set)/2)):
         snake_moves[set[i]*2] = set[i]*2+1
         snake_scores[set[i]*2] = 0
 
