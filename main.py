@@ -253,6 +253,8 @@ def move_and_score(newBoard, set, maximizingPlayer, depth, max_depth):
         snake_moves[set[i]*2] = set[i*2+1]
         snake_scores[set[i]*2] = 0
 
+    print_and_log(game_id, f" snake moves {snake_moves} ")
+
     #calculate avoidance scores before adding new snake heads to the board
     for snake in newBoard["snakes"]:
         if snake["id"] in snake_moves.keys():
@@ -262,6 +264,9 @@ def move_and_score(newBoard, set, maximizingPlayer, depth, max_depth):
             else:
                 snake_scores[snake["id"]] = avoid_snakes(next, newBoard, snake, depth)
                 snake_heads[snake["id"]] = next
+
+    print_and_log(game_id, f" snake scores {snake_scores} ")
+    print_and_log(game_id, f" snake heads {snake_heads} ")
 
     #add new snake heads to the board
     for snake in newBoard["snakes"]:
