@@ -242,6 +242,7 @@ def end_score(game_id, myBoard, depth):
     return estimate
 
 def move_and_score(newBoard, set, maximizingPlayer, depth, max_depth):
+    print_and_log(game_id, f" move_and_score ")
     estimate = 1000000
     if maximizingPlayer:
         estimate = -1000000
