@@ -188,6 +188,7 @@ def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alph
                 else:
                     sets = [set + [snake["id"],move] for move in valid_moves for set in sets]
 
+        print_and_log(game_id, f" sets {sets} ")
         for set in sets:
             newBoard = copy_board(myBoard)
             print_and_log(game_id, f"<< d={depth} max={maximizingPlayer} {set}: ")
