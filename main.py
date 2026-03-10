@@ -138,7 +138,7 @@ def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alph
         pre_move_scores[snake["id"]] = {}
         for move in possible_moves:
             next = get_next(snake["body"][0], move)
-            snake_score = avoid_snakes(next, myBoard, snake, depth)
+            snake_score = avoid_snakes(game_id, next, myBoard, snake, depth)
             if snake["health"] < 1 or not avoid_walls(next, myBoard["width"], myBoard["height"]):
                 snake_score = -1000000
             pre_move_scores[snake["id"]][move] = snake_score
@@ -269,7 +269,7 @@ def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
                 snake["health"] = 0
             else:
                 print_and_log(game_id, f" good {snake["id"]} ")
-                snake_scores[snake["id"]] = avoid_snakes(next, newBoard, snake, depth)
+                snake_scores[snake["id"]] = avoid_snakes(game_id, next, newBoard, snake, depth)
                 snake_heads[snake["id"]] = next
 
     print_and_log(game_id, f" snake scores {snake_scores} ")
@@ -315,7 +315,7 @@ def avoid_walls(futureHead, boardWidth, boardHeight):
     else:
         return True
 
-def avoid_snakes(futureHead, newBoard, currentSnake, depth):
+def avoid_snakes(game_id, futureHead, newBoard, currentSnake, depth):
     #allow impact of dying snake
     currentSnakeLen = len(currentSnake["body"])
     value = 0
@@ -323,8 +323,10 @@ def avoid_snakes(futureHead, newBoard, currentSnake, depth):
         snakeLen = len(snake["body"])
         #if snake is currentSnake, then I chose this path
         if depth < snakeLen - 2 and futureHead in snake["body"][depth+1:-1]:
+            print_and_log(game_id, f" as1 ")
             value = min(value, -1000000) #dead if hit snake body
         elif futureHead in currentSnake["body"][1:-1]:
+            print_and_log(game_id, f" as2 ")
             value = min(value, -1000000) #dead if hit my snake body
         elif futureHead in snake["body"][1:-1]:
             #i should not return with just -100 if it could be worse!
@@ -343,6 +345,7 @@ def avoid_snakes(futureHead, newBoard, currentSnake, depth):
 
             if (snake["health"] == 100 or newBoard["map"] == "constrictor" or snake["id"] == newBoard["myId"]) and futureHead == snake["body"][-1]:
                 value = min(value, -1000000)
+                print_and_log(game_id, f" as3 ")
             elif snake["id"] == newBoard["myId"] and snakeLen >= currentSnakeLen:
                 #avoid connecting with another snake head that is >= my length and has moved already    
                 if dx0 + dy0 == 0:
