@@ -20,7 +20,7 @@ import cProfile, pstats, io
 from pstats import SortKey
 
 use_profiling = False
-deployed = True
+deployed = False
 pr = cProfile.Profile()
 
 possible_moves = ["up", "down", "left", "right"]
@@ -444,8 +444,6 @@ if __name__ == "__main__":
     for i in range(len(sys.argv) - 1):
         if sys.argv[i] == '--port':
             port = sys.argv[i + 1]
-        elif sys.argv[i] == '--seed':
-            random_seed = int(sys.argv[i + 1])
         elif sys.argv[i] == '--color':
             snake_color = sys.argv[i + 1]
         elif sys.argv[i] == '--log':
