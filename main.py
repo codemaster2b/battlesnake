@@ -142,6 +142,8 @@ def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alph
                 snake_score = -1000000
             pre_move_scores[snake["id"]][move] = snake_score
 
+    print_and_log(game_id, f"<< d={depth} max={maximizingPlayer} {pre_move_scores}")
+
     if maximizingPlayer:
         bestValue = -1000000
         for move in possible_moves:
