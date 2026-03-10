@@ -278,6 +278,7 @@ def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
     #add new snake heads to the board
     for snake in newBoard["snakes"]:
         if snake["id"] in snake_heads.keys():
+            print_and_log(game_id, f" insert {snake["id"]} ")
             next = snake_heads[snake["id"]]
             snake["body"].insert(0, next)
             ateFood = False
