@@ -235,7 +235,7 @@ def end_score(game_id, myBoard, depth):
         p = path_score(myBoard, snake, snake["body"][0])
         snake_score = f + h + l + p
         maximizingPlayer = snake["id"] == myBoard["myId"]
-        print_and_log(game_id, f"[max={maximizingPlayer} f={f} h={h} l={l} p={p}] ")
+        print_and_log(game_id, f"[{snake["id"]}:{len(snake["body"])} max={maximizingPlayer} f={f} h={h} l={l} p={p}] ")
         if snake["id"] == myBoard["myId"]:
             estimate += snake_score
         else:
@@ -278,7 +278,7 @@ def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
     #add new snake heads to the board
     for snake in newBoard["snakes"]:
         if snake["id"] in snake_heads.keys():
-            print_and_log(game_id, f" insert {snake["id"]} ")
+            print_and_log(game_id, f" {snake["id"]}:{len(snake["body"])} pre-insert ")
             next = snake_heads[snake["id"]]
             snake["body"].insert(0, next)
             ateFood = False
