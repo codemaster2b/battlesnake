@@ -89,6 +89,7 @@ def end(gameState: typing.Dict):
 
 # move is called on every turn and returns your next move
 def move(gameState: typing.Dict) -> typing.Dict:
+    game_id = gameState["game"]["id"]
     start_time = datetime.now()
     gameState["board"]["myId"] = gameState["you"]["id"]
     gameState["board"]["map"] = gameState["game"]["map"]
@@ -99,7 +100,7 @@ def move(gameState: typing.Dict) -> typing.Dict:
     next_move = random.choice(possible_moves)
     if results.qsize() > 0:
         next_move = results.get_nowait()
-    print_and_log(gameState["game"]["id"], f"MOVE {gameState['turn']}: {next_move} {round((datetime.now()-start_time).total_seconds(),3)}s\n", True)
+    print_and_log(game_id, f"MOVE {gameState['turn']}: {next_move} {round((datetime.now()-start_time).total_seconds(),3)}s\n", True)
 
     return {"move": next_move}
 
@@ -150,7 +151,7 @@ def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alph
             if pre_move_scores[myBoard["myId"]][move] > -500000:
                 newBoard = copy_board(myBoard)
                 print_and_log(game_id, f"<< d={depth} max={maximizingPlayer} {move}: ")
-                immediate_score = move_and_score(newBoard, [newBoard["myId"], move], maximizingPlayer, depth, max_depth)
+                immediate_score = move_and_score(game_id, newBoard, [newBoard["myId"], move], maximizingPlayer, depth, max_depth)
                 if immediate_score > -500000:
                     value, m = minimax(game_id, end_time, newBoard, depth, max_depth, not maximizingPlayer, alpha, beta)
                     if datetime.now() >= end_time:
@@ -190,7 +191,7 @@ def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alph
         for set in sets:
             newBoard = copy_board(myBoard)
             print_and_log(game_id, f"<< d={depth} max={maximizingPlayer} {set}: ")
-            immediate_score = move_and_score(newBoard, set, maximizingPlayer, depth, max_depth)
+            immediate_score = move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth)
             if immediate_score < 500000:
                 value, m = minimax(game_id, end_time, newBoard, depth + 1, max_depth, not maximizingPlayer, alpha, beta)
                 if datetime.now() >= end_time:
@@ -241,7 +242,7 @@ def end_score(game_id, myBoard, depth):
             estimate -= snake_score
     return estimate
 
-def move_and_score(newBoard, set, maximizingPlayer, depth, max_depth):
+def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
     print_and_log(game_id, f" move_and_score ")
     estimate = 1000000
     if maximizingPlayer:
