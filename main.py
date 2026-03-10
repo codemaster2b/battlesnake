@@ -259,11 +259,16 @@ def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
 
     #calculate avoidance scores before adding new snake heads to the board
     for snake in newBoard["snakes"]:
+        print_and_log(game_id, f" snake {snake["id"]} ")
         if snake["id"] in snake_moves.keys():
+            print_and_log(game_id, f" trying {snake["id"]} ")
             next = get_next(snake["body"][0], move)
+            print_and_log(game_id, f" next {next} ")
             if not avoid_walls(next, newBoard["width"], newBoard["height"]):
+                print_and_log(game_id, f" hit wall {snake["id"]} ")
                 snake["health"] = 0
             else:
+                print_and_log(game_id, f" good {snake["id"]} ")
                 snake_scores[snake["id"]] = avoid_snakes(next, newBoard, snake, depth)
                 snake_heads[snake["id"]] = next
 
