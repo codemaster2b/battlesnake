@@ -143,7 +143,7 @@ def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alph
                 snake_score = -1000000
             pre_move_scores[snake["id"]][move] = snake_score
 
-    print_and_log(game_id, f"<< d={depth} max={maximizingPlayer} {pre_move_scores}")
+    #print_and_log(game_id, f"<< d={depth} max={maximizingPlayer} pre {pre_move_scores}")
 
     if maximizingPlayer:
         bestValue = -1000000
@@ -255,25 +255,25 @@ def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
         snake_moves[set[i*2]] = set[i*2+1]
         snake_scores[set[i*2]] = 0
 
-    print_and_log(game_id, f" snake moves {snake_moves} newboard snakes {len(newBoard["snakes"])}")
+    print_and_log(game_id, f" snake moves {snake_moves} ")
 
     #calculate avoidance scores before adding new snake heads to the board
     for snake in newBoard["snakes"]:
-        print_and_log(game_id, f" snake {snake["id"]} ")
+        #print_and_log(game_id, f" snake {snake["id"]} ")
         if snake["id"] in snake_moves.keys():
-            print_and_log(game_id, f" trying {snake["id"]} ")
+            #print_and_log(game_id, f" trying {snake["id"]} ")
             next = get_next(snake["body"][0], move)
-            print_and_log(game_id, f" next {next} ")
+            #print_and_log(game_id, f" next {next} ")
             if not avoid_walls(next, newBoard["width"], newBoard["height"]):
-                print_and_log(game_id, f" hit wall {snake["id"]} ")
+                #print_and_log(game_id, f" hit wall {snake["id"]} ")
                 snake["health"] = 0
             else:
-                print_and_log(game_id, f" good {snake["id"]} ")
+                #print_and_log(game_id, f" good {snake["id"]} ")
                 snake_scores[snake["id"]] = avoid_snakes(game_id, next, newBoard, snake, depth)
                 snake_heads[snake["id"]] = next
 
     print_and_log(game_id, f" snake scores {snake_scores} ")
-    print_and_log(game_id, f" snake heads {snake_heads} ")
+    #print_and_log(game_id, f" snake heads {snake_heads} ")
 
     #add new snake heads to the board
     for snake in newBoard["snakes"]:
@@ -323,10 +323,10 @@ def avoid_snakes(game_id, futureHead, newBoard, currentSnake, depth):
         snakeLen = len(snake["body"])
         #if snake is currentSnake, then I chose this path
         if depth < snakeLen - 2 and futureHead in snake["body"][depth+1:-1]:
-            print_and_log(game_id, f" as1 ")
+            print_and_log(game_id, f" as1 {currentSnake["id"]==snake["id"]} ")
             value = min(value, -1000000) #dead if hit snake body
         elif futureHead in currentSnake["body"][1:-1]:
-            print_and_log(game_id, f" as2 ")
+            print_and_log(game_id, f" as2 {currentSnake["id"]==snake["id"]} ")
             value = min(value, -1000000) #dead if hit my snake body
         elif futureHead in snake["body"][1:-1]:
             #i should not return with just -100 if it could be worse!
