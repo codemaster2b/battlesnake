@@ -298,7 +298,9 @@ def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
                 estimate = snake_scores[snake["id"]]
             else:
                 estimate = min(estimate, -1*snake_scores[snake["id"]])
-        print_and_log(game_id, f" snake score {snake["id"]}:{snake_scores[snake["id"]]} ")
+
+        if snake["id"] in snake_scores.keys():
+            print_and_log(game_id, f" snake score {snake["id"]}:{snake_scores[snake["id"]]} ")
 
     return estimate
 
