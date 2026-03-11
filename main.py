@@ -309,6 +309,10 @@ def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
                 estimate = snake_scores[snake["id"]]
             else:
                 estimate = min(estimate, -1*snake_scores[snake["id"]])
+
+    for snake in newBoard["snakes"]:
+        print_and_log(game_id, f" {snake["id"]}:{len(snake["body"])} end-ms ")
+
     return estimate
 
 def avoid_walls(futureHead, boardWidth, boardHeight):
