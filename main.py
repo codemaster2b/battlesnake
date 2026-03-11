@@ -196,17 +196,14 @@ def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alph
                     return (0, "---")
                 value = round(value * 0.99 + immediate_score,2)
                 value = min(max(value, -1000000),1000000)
-                if value == bestValue:
-                    bestMoves = bestMoves + [move]
-                elif value < bestValue:
+                if value < bestValue:
                     bestValue = value
-                    bestMoves = [move]
                 beta = min(beta, bestValue)
-                print_and_log(game_id, f"final d={depth} max={maximizingPlayer} {move}: value={value} beta={beta} >>\n")
+                print_and_log(game_id, f"final d={depth} max={maximizingPlayer} {set}: value={value} beta={beta} >>\n")
                 if beta < alpha:
                     break
             else:
-                print_and_log(game_id, f"final d={depth} max={maximizingPlayer} {move}: immediate={immediate_score} >>\n")
+                print_and_log(game_id, f"final d={depth} max={maximizingPlayer} {set}: immediate={immediate_score} >>\n")
     if len(bestMoves) > 0:
         return bestValue, random.choice(bestMoves)
     else:
@@ -233,7 +230,7 @@ def end_score(game_id, myBoard, depth):
         p = path_score(myBoard, snake, snake["body"][0])
         snake_score = f + h + l + p
         maximizingPlayer = snake["id"] == myBoard["myId"]
-        print_and_log(game_id, f"[{snake["id"]}:{snake["body"][0]} max={maximizingPlayer} f={f} h={h} l={l} p={p}] ")
+        print_and_log(game_id, f"[{snake["id"]} max={maximizingPlayer} f={f} h={h} l={l} p={p}] ")
         if snake["id"] == myBoard["myId"]:
             estimate += snake_score
         else:
@@ -241,7 +238,6 @@ def end_score(game_id, myBoard, depth):
     return estimate
 
 def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
-    print_and_log(game_id, f" move_and_score ")
     estimate = 1000000
     if maximizingPlayer:
         estimate = -1000000
@@ -318,10 +314,8 @@ def avoid_snakes(game_id, futureHead, newBoard, currentSnake, depth):
         snakeLen = len(snake["body"])
         #if snake is currentSnake, then I chose this path
         if depth < snakeLen - 2 and futureHead in snake["body"][depth+1:-1]:
-            print_and_log(game_id, f" as1 {currentSnake["id"]==snake["id"]} ")
             value = min(value, -1000000) #dead if hit snake body
         elif futureHead in currentSnake["body"][1:-1]:
-            print_and_log(game_id, f" as2 {currentSnake["id"]==snake["id"]} ")
             value = min(value, -1000000) #dead if hit my snake body
         elif futureHead in snake["body"][1:-1]:
             #i should not return with just -100 if it could be worse!
@@ -340,7 +334,6 @@ def avoid_snakes(game_id, futureHead, newBoard, currentSnake, depth):
 
             if (snake["health"] == 100 or newBoard["map"] == "constrictor" or snake["id"] == newBoard["myId"]) and futureHead == snake["body"][-1]:
                 value = min(value, -1000000)
-                print_and_log(game_id, f" as3 ")
             elif snake["id"] == newBoard["myId"] and snakeLen >= currentSnakeLen:
                 #avoid connecting with another snake head that is >= my length and has moved already    
                 if dx0 + dy0 == 0:
