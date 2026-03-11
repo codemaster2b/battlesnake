@@ -186,7 +186,6 @@ def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alph
                 else:
                     sets = [set + [snake["id"],move] for move in valid_moves for set in sets]
 
-        print_and_log(game_id, f" sets {sets} ")
         for set in sets:
             newBoard = copy_board(myBoard)
             print_and_log(game_id, f"<< d={depth} max={maximizingPlayer} {set}: ")
@@ -265,8 +264,6 @@ def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
             else:
                 snake_scores[snake["id"]] = avoid_snakes(game_id, next, newBoard, snake, depth)
                 snake_heads[snake["id"]] = next
-
-    print_and_log(game_id, f" snake scores {snake_scores} ")
 
     #add new snake heads to the board
     for snake in newBoard["snakes"]:
