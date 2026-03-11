@@ -151,7 +151,11 @@ def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alph
             if pre_move_scores[myBoard["myId"]][move] > -500000:
                 newBoard = copy_board(myBoard)
                 print_and_log(game_id, f"<< d={depth} max={maximizingPlayer} {move}: ")
+                for snake in newBoard["snakes"]:
+                    print_and_log(game_id, f" {snake["id"]}:{len(snake["body"])} pre-ms ")
                 immediate_score = move_and_score(game_id, newBoard, [newBoard["myId"], move], maximizingPlayer, depth, max_depth)
+                for snake in newBoard["snakes"]:
+                    print_and_log(game_id, f" {snake["id"]}:{len(snake["body"])} post-ms ")
                 if immediate_score > -500000:
                     value, m = minimax(game_id, end_time, newBoard, depth, max_depth, not maximizingPlayer, alpha, beta)
                     if datetime.now() >= end_time:
@@ -183,8 +187,6 @@ def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alph
 
                 if len(sets) == 0:
                     sets = [[snake["id"],move] for move in valid_moves]
-                    for move in valid_moves:
-                        sets.append([snake["id"],move])
                 else:
                     sets = [set + [snake["id"],move] for move in valid_moves for set in sets]
 
@@ -192,7 +194,11 @@ def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alph
         for set in sets:
             newBoard = copy_board(myBoard)
             print_and_log(game_id, f"<< d={depth} max={maximizingPlayer} {set}: ")
+            for snake in newBoard["snakes"]:
+                print_and_log(game_id, f" {snake["id"]}:{len(snake["body"])} pre-ms ")
             immediate_score = move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth)
+            for snake in newBoard["snakes"]:
+                print_and_log(game_id, f" {snake["id"]}:{len(snake["body"])} post-ms ")
             if immediate_score < 500000:
                 value, m = minimax(game_id, end_time, newBoard, depth + 1, max_depth, not maximizingPlayer, alpha, beta)
                 if datetime.now() >= end_time:
@@ -260,16 +266,11 @@ def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
 
     #calculate avoidance scores before adding new snake heads to the board
     for snake in newBoard["snakes"]:
-        #print_and_log(game_id, f" snake {snake["id"]} ")
         if snake["id"] in snake_moves.keys():
-            #print_and_log(game_id, f" trying {snake["id"]} ")
             next = get_next(snake["body"][0], move)
-            #print_and_log(game_id, f" next {next} ")
             if not avoid_walls(next, newBoard["width"], newBoard["height"]):
-                #print_and_log(game_id, f" hit wall {snake["id"]} ")
                 snake["health"] = 0
             else:
-                #print_and_log(game_id, f" good {snake["id"]} ")
                 snake_scores[snake["id"]] = avoid_snakes(game_id, next, newBoard, snake, depth)
                 snake_heads[snake["id"]] = next
 
@@ -282,6 +283,7 @@ def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
             print_and_log(game_id, f" {snake["id"]}:{len(snake["body"])} pre-insert ")
             next = snake_heads[snake["id"]]
             snake["body"].insert(0, next)
+            print_and_log(game_id, f" {snake["id"]}:{len(snake["body"])} post-insert ")
             ateFood = False
             for food in newBoard["food"]:
                 if food["x"] == next["x"] and food["y"] == next["y"]:
