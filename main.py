@@ -292,6 +292,10 @@ def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
                 estimate = snake_scores[snake["id"]]
             else:
                 estimate = min(estimate, -1*snake_scores[snake["id"]])
+                
+        for snake_id in snake_heads.keys():
+            if snake["id"] != snake_id and snake_heads[snake_id] == snake["body"][0]:
+                snake["health"] = 0
 
         if snake["id"] in snake_scores.keys():
             print_and_log(game_id, f" snake score {snake["id"]}:{snake_scores[snake["id"]]} ")
