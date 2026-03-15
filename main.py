@@ -143,9 +143,8 @@ def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alph
                 snake_score = -1000000
             pre_move_scores[snake["id"]][move] = snake_score
 
-    print_and_log(game_id, f" pre_scores {pre_move_scores} ")
-
     if maximizingPlayer:
+        print_and_log(game_id, f" pre_scores {pre_move_scores} ")
         bestValue = -1000000
         for move in possible_moves:
             if pre_move_scores[myBoard["myId"]][move] > -500000:
@@ -293,12 +292,13 @@ def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
             else:
                 estimate = min(estimate, -1*snake_scores[snake["id"]])
                 
-        for snake_id in snake_heads.keys():
-            if snake["id"] != snake_id and snake_heads[snake_id] == snake["body"][0]:
-                snake["health"] = 0
-
-        if snake["id"] in snake_scores.keys():
-            print_and_log(game_id, f" snake score {snake["id"]}:{snake_scores[snake["id"]]} ")
+    for i in range(len(newBoard["snakes"])-1):
+        for j in range(i+1,len(newBoard["snakes"])):
+            if newBoard["snakes"][i]["body"][0] == newBoard["snakes"][j]["body"][0]:
+                if len(newBoard["snakes"][i]["body"]) >= len(newBoard["snakes"][j]["body"]):
+                    newBoard["snakes"][j]["health"] = 0
+                if len(newBoard["snakes"][i]["body"]) <= len(newBoard["snakes"][j]["body"]):
+                    newBoard["snakes"][i]["health"] = 0
 
     return estimate
 
