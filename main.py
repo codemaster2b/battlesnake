@@ -226,14 +226,14 @@ def end_score(game_id, myBoard, depth):
         f = food_score(myBoard, snake)
         h = hazard_score(myBoard, snake)
         l = length_score(snake)
-        p = path_score(myBoard, snake, snake["body"][0])
+        p = path_score(myBoard, snake)
         snake_score = f + h + l + p
         maximizingPlayer = snake["id"] == myBoard["myId"]
         print_and_log(game_id, f"[{snake["id"]} max={maximizingPlayer} f={f} h={h} l={l} p={p}] ")
         if snake["id"] == myBoard["myId"]:
             estimate += snake_score
         else:
-            estimate -= snake_score
+            estimate -= snake_score / 2.0
     return estimate
 
 def move_and_score(game_id, newBoard, set, maximizingPlayer, depth, max_depth):
@@ -367,7 +367,7 @@ def hazard_score(myBoard, snake):
 def length_score(snake):
     return (len(snake["body"]) + int(snake["health"] / 100)) * 25 + snake["health"]
 
-def path_score(myBoard, current_snake, move):
+def path_score(myBoard, current_snake):
     width = myBoard["width"]
     height = myBoard["height"]
     max_cost = current_snake["health"] - 1
@@ -387,23 +387,39 @@ def path_score(myBoard, current_snake, move):
     for snake in myBoard["snakes"]:
         if snake["health"] > 0:
             for part in snake["body"]:
-                if part != current_snake["body"][0]: #works with both immediate and end_score
-                    part_index = part["y"] * 11 + part["x"]
-                    visits[part_index] = 3
-                    distances[part_index] = 100
+                part_index = part["y"] * 11 + part["x"]
+                visits[part_index] = 3
+                distances[part_index] = 100
+                
                 #consider the possible destinations of other snake heads
-                #why am i ignoring my chosen head?
                 #if i do this, i could do it once per snake head move.... hm how to be efficient?
-    
-    #begin at the move node
-    move_index = move["y"] * 11 + move["x"]
+                if snake["id"] != current_snake["id"] and part == snake["body"][1]:
+                    if part_index // 11 < height - 1:
+                        neighbor = part_index + 11
+                        visits[neighbor] = 3
+                        distances[neighbor] = 100
+                    if part_index // 11 > 0:
+                        neighbor = part_index - 11
+                        visits[neighbor] = 3
+                        distances[neighbor] = 100
+                    if part_index % 11 < width - 1:
+                        neighbor = part_index + 1
+                        visits[neighbor] = 3
+                        distances[neighbor] = 100
+                    if part_index % 11 > 0:
+                        neighbor = part_index - 1
+                        visits[neighbor] = 3
+                        distances[neighbor] = 100
+            
+    #begin at the current snake head node
+    move_index = current_snake["body"][0]["y"] * 11 + current_snake["body"][0]["x"]
     
     #invalid start for the search
-    if move["x"] < 0 or move["y"] < 0 or move["x"] >= width or move["y"] >= height or visits[move_index] > 0: 
+    if move["x"] < 0 or move["y"] < 0 or move["x"] >= width or move["y"] >= height: 
         return 0
     else:
         visits[move_index] = 1
-        distances[move_index] = 1
+        distances[move_index] = 0
         
         while 1 in visits:
             #find next lowest number
@@ -421,7 +437,7 @@ def path_score(myBoard, current_snake, move):
                 if cost <= max_cost and visits[neighbor] < 1:
                     distances[neighbor] = cost
                     visits[neighbor] = 1
-            if node // 11 >0:
+            if node // 11 > 0:
                 neighbor = node - 11
                 cost = distances[node] + costs[neighbor]
                 if cost <= max_cost and visits[neighbor] < 1:
@@ -447,7 +463,7 @@ def path_score(myBoard, current_snake, move):
             visited_nodes += 1 - 0.01 * distances[i]
     
     return round(-1000/visited_nodes, 3)
-
+    
 # Start server when `python main.py` is run
 if __name__ == "__main__":
     from server import run_server
