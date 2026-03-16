@@ -412,7 +412,8 @@ def path_score(myBoard, current_snake):
                         distances[neighbor] = 100
             
     #begin at the current snake head node
-    move_index = current_snake["body"][0]["y"] * 11 + current_snake["body"][0]["x"]
+    move = current_snake["body"][0]
+    move_index = move["y"] * 11 + move["x"]
     
     #invalid start for the search
     if move["x"] < 0 or move["y"] < 0 or move["x"] >= width or move["y"] >= height: 
