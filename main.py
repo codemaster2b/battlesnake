@@ -155,7 +155,7 @@ def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alph
                     value, m = minimax(game_id, end_time, newBoard, depth, max_depth, not maximizingPlayer, alpha, beta)
                     if datetime.now() >= end_time:
                         return (0, "---")
-                    value = round(value * 0.99 + immediate_score,2)
+                    value = round(value + immediate_score,2)
                     value = min(max(value, -1000000),1000000)
                     if value == bestValue:
                         bestMoves = bestMoves + [move]
@@ -193,7 +193,7 @@ def minimax(game_id, end_time, myBoard, depth, max_depth, maximizingPlayer, alph
                 value, m = minimax(game_id, end_time, newBoard, depth + 1, max_depth, not maximizingPlayer, alpha, beta)
                 if datetime.now() >= end_time:
                     return (0, "---")
-                value = round(value * 0.99 + immediate_score,2)
+                value = round(value + immediate_score,2)
                 value = min(max(value, -1000000),1000000)
                 if value < bestValue:
                     bestValue = value
@@ -387,10 +387,13 @@ def path_score(myBoard, current_snake, move):
     for snake in myBoard["snakes"]:
         if snake["health"] > 0:
             for part in snake["body"]:
-                if part != current_snake["body"][0]: #works with both immediate and depth=0 cases
+                if part != current_snake["body"][0]: #works with both immediate and end_score
                     part_index = part["y"] * 11 + part["x"]
                     visits[part_index] = 3
                     distances[part_index] = 100
+                #consider the possible destinations of other snake heads
+                #why am i ignoring my chosen head?
+                #if i do this, i could do it once per snake head move.... hm how to be efficient?
     
     #begin at the move node
     move_index = move["y"] * 11 + move["x"]
