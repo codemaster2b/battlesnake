@@ -403,7 +403,7 @@ def path_score(myBoard, current_snake):
                         visits[neighbor] = 3
                         distances[neighbor] = 100
                     if part_index % 11 < width - 1:
-                       neighbor = part_index + 1
+                        neighbor = part_index + 1
                         visits[neighbor] = 3
                         distances[neighbor] = 100
                     if part_index % 11 > 0:
