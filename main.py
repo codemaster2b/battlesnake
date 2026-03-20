@@ -386,30 +386,30 @@ def path_score(myBoard, current_snake):
     #snakes are already visited, but do not allow impact of dying snake
     for snake in myBoard["snakes"]:
         if snake["health"] > 0:
-            for part in snake["body"]:
-                part_index = part["y"] * 11 + part["x"]
-                visits[part_index] = 3
-                distances[part_index] = 100
+            #for part in snake["body"][:-1]:
+            for i in range(len(snake["body"])):
+                if i < len(snake["body"]) - 1 or myBoard["map"] == "constrictor" or snake["health"] == 100:
+                    part_index = snake["body"][i]["y"] * 11 + snake["body"][i]["x"]
+                    visits[part_index] = 3
+                    distances[part_index] = 100
                 
-                #consider the possible destinations of other snake heads
-                #if i do this, i could do it once per snake head move.... hm how to be efficient?
-                #if snake["id"] != current_snake["id"] and part == snake["body"][1]:
-                #    if part_index // 11 < height - 1:
-                #        neighbor = part_index + 11
-                #        visits[neighbor] = 3
-                #        distances[neighbor] = 100
-                #    if part_index // 11 > 0:
-                #        neighbor = part_index - 11
-                #        visits[neighbor] = 3
-                #        distances[neighbor] = 100
-                #    if part_index % 11 < width - 1:
-                #       neighbor = part_index + 1
-                #        visits[neighbor] = 3
-                #        distances[neighbor] = 100
-                #    if part_index % 11 > 0:
-                #        neighbor = part_index - 1
-                #        visits[neighbor] = 3
-                #        distances[neighbor] = 100
+                if i == 0 and snake["id"] != current_snake["id"]:
+                    if part_index // 11 < height - 1:
+                        neighbor = part_index + 11
+                        visits[neighbor] = 3
+                        distances[neighbor] = 100
+                    if part_index // 11 > 0:
+                        neighbor = part_index - 11
+                        visits[neighbor] = 3
+                        distances[neighbor] = 100
+                    if part_index % 11 < width - 1:
+                       neighbor = part_index + 1
+                        visits[neighbor] = 3
+                        distances[neighbor] = 100
+                    if part_index % 11 > 0:
+                        neighbor = part_index - 1
+                        visits[neighbor] = 3
+                        distances[neighbor] = 100
             
     #begin at the current snake head node
     move = current_snake["body"][0]
