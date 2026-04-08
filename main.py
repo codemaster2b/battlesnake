@@ -108,7 +108,7 @@ def move_iterating(gameState, queue, end_time):
     max_depth = 1
     times = []
     times.append(datetime.now())
-    while datetime.now() < end_time and max_depth < 3:
+    while datetime.now() < end_time and max_depth < 4:
         value, move = minimax(gameState["game"]["id"], end_time, gameState["board"], 0, max_depth, True, -1000000, 1000000)
         times.append(datetime.now())    
         if datetime.now() < end_time:
